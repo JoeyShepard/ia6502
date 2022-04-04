@@ -9,8 +9,6 @@
 #TODO: highight whole expression if out of range?
 #TODO: generate byte for LDA #
 #TODO; partial effects on flags even if unknown - blank better than ?
-#TODO: lda with no arg shouldnt be not found
-#      - need to handle lda 2+ anyway
 
 #Start here:
 #TODO: ZPR
@@ -1443,8 +1441,9 @@ def InteractiveAssembler(screen):
             else:
                 #Byte list empty - syntax error (handled above), blank line (ignore) or instruction with wrong addressing mode like SEC 5
                 if line.mode_not_found:
-                    
-                    CursesText(screen,BYTES_X,draw_y,"Mode not found!","bytes error")
+                    #Don't warn if only instruction since probably about to type argument 
+                    if len(line.simplified_symbol_list)!=1:
+                        CursesText(screen,BYTES_X,draw_y,"Mode not found!","bytes error")
                 elif line.range_error:
                     CursesText(screen,BYTES_X,draw_y,"Range error!","bytes error")
 
