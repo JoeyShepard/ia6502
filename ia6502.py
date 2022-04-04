@@ -16,14 +16,10 @@
 #TODO: branches
 #TODO: .set
 from sys import path, argv
-from os.path import expanduser
-path.append(expanduser("~/python/"))
-
-#from color import *
 from sys import exit
 import curses
 
-
+#Generated from spreadsheet - edit there and copy here
 OP_INFO={
 
 0x0:("BRK","IMP",1,7,"","","","","BDI","none"),
