@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
 
-#TODO: Kowalski cant do LDA 3+(4)
 #TODO: SET and XSET
-#TODO: double check all debug_msgs removed
 #TODO: more comments
-#TODO: array.insert to clean up code
 #TODO: screen refresh very noticeable
 #TODO: highight whole expression if out of range?
 #TODO: generate byte for LDA #
-#TODO; partial effects on flags even if unknown - blank better than ?
+#TODO: partial effects on flags even if unknown - blank better than ?
 
 #Start here:
 #TODO: ZPR
 #TODO: labels
 #TODO: branches
 #TODO: .set
+
+#TODO at end:
+# - Kowalski cant do LDA 3+(4)
+# - double check all debug_msgs removed
+# - check flags in Kowalski
+
 from sys import path, argv
 from sys import exit
 import curses
@@ -341,6 +344,8 @@ class ProcessorClass:
         self.I=0
         self.Z=0
         self.C=0
+        #Whether registers set and ready to print
+        self.regs_valid=True
 
 #Line of assembly text including tokenized form, colored text, assembled bytes etc 
 class LineClass:
@@ -482,7 +487,7 @@ class LineClass:
                 self.symbol_list+=[(new_val,new_type)]
             new_symbols=[]
 
-#State machine for verifying syntax - edit in spreadsheet, not here
+    #State machine for verifying syntax - edit in spreadsheet, not here
     _verification_state_machine={
         ('','n'):'n',
         ('~','n'):'n',
@@ -1341,6 +1346,9 @@ class LineClass:
                 temp_obj.update()
                 f.write(test+" - "+temp_obj.pattern+"\n")
 
+#Constants for screen output
+#===========================
+
 #Screen output constants
 MAX_INPUT_LEN=20
 
@@ -1376,7 +1384,12 @@ LINES_START_Y=1
 #Emulator constants
 EMU_START_ADDRESS=0xC000    #Default start address if no .ORG
 
-#Functions
+#Screen output functions
+#=======================
+
+#Optional message after exiting curses
+exit_msg=""
+
 def Hex2(num):
     return ("00"+hex(num)[2:])[-2:].upper()
 
@@ -1388,6 +1401,9 @@ def CursesText(screen,draw_x,draw_y,text,color="none"):
     return draw_x+len(text)
 
 def InteractiveAssembler(screen):
+
+    
+
     #Initialize color pairs
     global COLOR_DICT
     for i,color in enumerate(TEXT_COLORS):
@@ -1408,134 +1424,147 @@ def InteractiveAssembler(screen):
     global_symbols["foo"]=("123","number")
 
     #Main loop
+    redraw_screen=True
     while(True):
-        screen.clear() 
+        if redraw_screen:
+            screen.clear() 
 
-        #Draw headers
-        CursesText(screen,HEADER_X,HEADER_Y,HEADER_TEXT)
+            #Draw headers
+            CursesText(screen,HEADER_X,HEADER_Y,HEADER_TEXT)
 
-        #Draw lines
-        line_address=EMU_START_ADDRESS
-        for i,line in enumerate(program_lines):
-            #Calculate Y offset once
-            draw_y=LINES_START_Y+i
+            #Draw lines
+            line_address=EMU_START_ADDRESS
+            for i,line in enumerate(program_lines):
+                #Calculate Y offset once
+                draw_y=LINES_START_Y+i
 
-            #Address
-            color="none"
-            if line.symbol_error:
-                color="line error"
-            elif line.symbol_unknown and not line.symbol_unknown_last:
-                color="line unknown"
-            else:
+                #Address
                 color="none"
-            CursesText(screen,ADDRESS_X,draw_y,Hex4(line_address),color)
-            CursesText(screen,ADDRESS_X+5,draw_y,":")
+                if line.symbol_error:
+                    color="line error"
+                elif line.symbol_unknown and not line.symbol_unknown_last:
+                    color="line unknown"
+                else:
+                    color="none"
+                CursesText(screen,ADDRESS_X,draw_y,Hex4(line_address),color)
+                CursesText(screen,ADDRESS_X+5,draw_y,":")
 
-            #Assembled bytes
-            if line.bytes!=[]:
-                draw_x=BYTES_X
-                for byte in line.bytes:
-                    if byte==[]:
-                        CursesText(screen,draw_x,draw_y,"??","bytes unknown")
-                        CursesText(screen,draw_x+2,draw_y," ")
-                    else:
-                        CursesText(screen,draw_x,draw_y,Hex2(byte)+" ")
-                    draw_x+=3
-            else:
-                #Byte list empty - syntax error (handled above), blank line (ignore) or instruction with wrong addressing mode like SEC 5
-                if line.mode_not_found:
-                    #Don't warn if only instruction since probably about to type argument 
-                    if len(line.simplified_symbol_list)!=1:
-                        CursesText(screen,BYTES_X,draw_y,"Mode not found!","bytes error")
-                elif line.range_error:
-                    CursesText(screen,BYTES_X,draw_y,"Range error!","bytes error")
+                #Assembled bytes
+                if line.bytes!=[]:
+                    draw_x=BYTES_X
+                    for byte in line.bytes:
+                        if byte==[]:
+                            CursesText(screen,draw_x,draw_y,"??","bytes unknown")
+                            CursesText(screen,draw_x+2,draw_y," ")
+                        else:
+                            CursesText(screen,draw_x,draw_y,Hex2(byte)+" ")
+                        draw_x+=3
+                else:
+                    #Byte list empty - syntax error (handled above), blank line (ignore) or instruction with wrong addressing mode like SEC 5
+                    if line.mode_not_found:
+                        #Don't warn if only instruction since probably about to type argument 
+                        if len(line.simplified_symbol_list)!=1:
+                            CursesText(screen,BYTES_X,draw_y,"Mode not found!","bytes error")
+                    elif line.range_error:
+                        CursesText(screen,BYTES_X,draw_y,"Range error!","bytes error")
 
-            #TODO: change
-            CursesText(screen,BYTES_X,draw_y+3,line.pattern+" - "+line.debug_pattern_reason)
-            CursesText(screen,BYTES_X,draw_y+4,str(line.symbol_list))
-            for i,msg in enumerate(line.debug_msgs):
-                CursesText(screen,BYTES_X,draw_y+i*3+6,msg)
-           
-            #Text input
-            draw_x=INPUT_X
-            for obj in line.text_symbol_list:
-                text,color=obj
-                CursesText(screen,draw_x,draw_y,text,color)
-                draw_x+=len(text)
+                #TODO: change
+                CursesText(screen,BYTES_X,draw_y+3,line.pattern+" - "+line.debug_pattern_reason)
+                CursesText(screen,BYTES_X,draw_y+4,str(line.symbol_list))
+                for i,msg in enumerate(line.debug_msgs):
+                    CursesText(screen,BYTES_X,draw_y+i*3+6,msg)
+               
+                #Text input
+                draw_x=INPUT_X
+                for obj in line.text_symbol_list:
+                    text,color=obj
+                    CursesText(screen,draw_x,draw_y,text,color)
+                    draw_x+=len(text)
+                
+                #Registers
+                reg_A=line.CPU.A
+                if reg_A<32 or (reg_A>=127 and reg_A<=160):
+                    reg_A_char=" "
+                else:
+                    reg_A_char=chr(reg_A)
+                CursesText(screen,REG_A_X,draw_y,"$"+Hex2(line.CPU.A)+"("+reg_A_char+")")
+                CursesText(screen,REG_X_X,draw_y,"$"+Hex2(line.CPU.X))
+                CursesText(screen,REG_Y_X,draw_y,"$"+Hex2(line.CPU.Y))
+                CursesText(screen,REG_SP_X,draw_y,"$"+Hex2(line.CPU.SP))
+                
+                #Flags
+                if line.CPU.regs_valid:
+                    flag_output=""
+                    flag_output+="N" if line.CPU.N==1 else "n"
+                    flag_output+="V" if line.CPU.V==1 else "v"
+                    flag_output+="-B"
+                    flag_output+="D" if line.CPU.D==1 else "d"
+                    flag_output+="I" if line.CPU.I==1 else "i"
+                    flag_output+="Z" if line.CPU.Z==1 else "z"
+                    flag_output+="C" if line.CPU.C==1 else "c"
+                    CursesText(screen,FLAGS_X,draw_y,flag_output)
+
+            #Place cursor on input line
+            screen.move(LINES_START_Y+current_line,INPUT_X+input_ptr)
+            screen.refresh()
             
-            #Registers
-            reg_A=line.CPU.A
-            if reg_A<32 or (reg_A>=127 and reg_A<=160):
-                reg_A_char=" "
-            else:
-                reg_A_char=chr(reg_A)
-            CursesText(screen,REG_A_X,draw_y,"$"+Hex2(line.CPU.A)+"("+reg_A_char+")")
-            CursesText(screen,REG_X_X,draw_y,"$"+Hex2(line.CPU.X))
-            CursesText(screen,REG_Y_X,draw_y,"$"+Hex2(line.CPU.Y))
-            CursesText(screen,REG_SP_X,draw_y,"$"+Hex2(line.CPU.SP))
-            
-            #Flags
-            if line.CPU.regs_valid:
-                flag_output=""
-                flag_output+="N" if line.CPU.N==1 else "n"
-                flag_output+="V" if line.CPU.V==1 else "v"
-                flag_output+="-B"
-                flag_output+="D" if line.CPU.D==1 else "d"
-                flag_output+="I" if line.CPU.I==1 else "i"
-                flag_output+="Z" if line.CPU.Z==1 else "z"
-                flag_output+="C" if line.CPU.C==1 else "c"
-                CursesText(screen,FLAGS_X,draw_y,flag_output)
-
-        #Place cursor on input line
-        screen.move(LINES_START_Y+current_line,INPUT_X+input_ptr)
-        screen.refresh()
-        
         #Process keys
         try:
+            #One second timeout for key input
+            curses.halfdelay(10)
             key=screen.getkey()
         except KeyboardInterrupt:
-            #User pressed Ctrl+C
-           
-            #TODO: remove
-            #with open("debug.txt","wt") as f:
-            #    for symbol in program_lines[current_line].symbol_list:
-            #        f.write(str(symbol)+"\n")
-            #    for symbol in program_lines[current_line].text_symbol_list:
-            #        f.write(str(symbol)+"\n")
+            #User pressed Ctrl+C - return and exit
+            return
+        except curses.error:
+            #One second elapsed without key - reassemble and emulate
+            #(Could be other error but curses doesn't have way to distinguish)
+            key=""
+            pass
 
-            exit(0)
-        #TODO: decide if only update on changed string or update on left/right to get parentheses highlighting
-        #update_input=False
-        update_input=True
+        redraw_screen=True
         if key=="KEY_RESIZE":
-            #Redraw whole screen every time so shouldn't be needed
+            #Redraw screen - redraw_screen already True
             pass
         elif key=="KEY_BACKSPACE":
             if input_ptr!=0:
                 input_str=input_str[:input_ptr-1]+input_str[input_ptr:]
                 input_ptr-=1
-                update_input=True
+            else:
+                redraw_screen=False
         elif key=="KEY_LEFT":
             if input_ptr>0:
                 input_ptr-=1
+            else:
+                redraw_screen=False
         elif key=="KEY_RIGHT":
             if input_ptr<len(input_str):
                 input_ptr+=1
+            else:
+                redraw_screen=False
         elif key=="KEY_HOME":
-            input_ptr=0
+            if input_ptr!=0:
+                input_ptr=0
+            else:
+                redraw_screen=False
         elif key=="KEY_END":
-            input_ptr=len(input_str)
+            if input_ptr!=len(input_str):
+                input_ptr=len(input_str)
+            else:
+                redraw_screen=False
         elif key=="KEY_DC":
             if input_ptr!=len(input_str):
                 input_str=input_str[:input_ptr]+input_str[input_ptr+1:]
-                update_input=True
+            else:
+                redraw_screen=False
         elif len(key)==1 and len(input_str)<MAX_INPUT_LEN:
-            input_str=input_str[:input_ptr]+key+input_str[input_ptr:]
-            input_ptr+=1
-            update_input=True
+            #Prevent escaped characters and other junk
+            if key.isalnum() or key in " ~`!@#$%^&*()_+-={}[];':<>,.?/|\"\\":
+                input_str=input_str[:input_ptr]+key+input_str[input_ptr:]
+                input_ptr+=1
 
         #Update program line
-        if update_input:
+        if redraw_screen:
             program_lines[current_line].raw_str=input_str
             program_lines[current_line].raw_str_ptr=input_ptr
             program_lines[current_line].update()
