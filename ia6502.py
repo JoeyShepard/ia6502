@@ -383,6 +383,7 @@ class LineClass:
         self.mode_not_found=False           #Instruction on line found but not with supplied addressing mode? 
         self.range_error=False              #Instruction argument out of range?
         self.label=""                       #Instruction label if it exists
+        self.comma_count=0                  #Count of commas useful in .BYTE and similar directives
 
         self.debug_msgs=[]                  #Debug messages to be printed when screen redrawn
 
@@ -574,7 +575,6 @@ class LineClass:
         previous_symbol=""
         found_first=False
         found_second=False
-        comma_count=0
         for i,symbol in enumerate(self.symbol_list):
             symbol_val,symbol_type=symbol
             #Recognize instructions, assembly directives, and registers
@@ -722,18 +722,18 @@ class LineClass:
                     elif symbol_val in "-":
                         next_symbol=symbol_val
                     elif symbol_val in ",":
-                        comma_count+=1
+                        self.comma_count+=1
                         if self.line_type=="dir":
                             if paren_level!=0:
                                 #Comma inside parentheses not allowed in assembly directive
                                 new_symbol=(symbol_val,"error")
                                 self.symbol_error=True
-                            elif dir_comma_count!=-1 and comma_count>dir_comma_count:
+                            elif dir_comma_count!=-1 and self.comma_count>dir_comma_count:
                                 #Allowed number of commas for given assembly directive in table above
                                 new_symbol=(symbol_val,"error")
                                 self.symbol_error=True
                         elif self.line_type=="op":
-                            if comma_count>1:
+                            if self.comma_count>1:
                                 #No instructions have two commas
                                 new_symbol=(symbol_val,"error")
                                 self.symbol_error=True
@@ -1274,13 +1274,29 @@ class LineClass:
         "ZPX":  (1, ""),
         "ZPY":  (1, "")
         }
-
+ 
     #Assign bytes for instruction or directive. Assign only op code if instruction argument contains unresolved symbol.
     def __assign_bytes(self):
         if self.pattern=="E":
             return
         elif self.pattern=="D":
-            return
+            if self.line_type_symbol_val.upper()==".ORG":
+                pass
+            elif self.line_type_symbol_val.upper()==".SET":
+                pass
+            elif self.line_type_symbol_val.upper()==".XSET":
+                pass
+            elif self.line_type_symbol_val.upper() in [".BYTE",".DB",".ASCII"]:
+                if self.symbol_unknown:
+                    self.bytes=[[]]*(self.comma_count+1)
+                else:
+                    
+                    pass
+            elif self.line_type_symbol_val.upper() in [".DW",".WORD"]:
+                pass
+            elif self.line_type_symbol_val.upper() in [".DS",".RS"]:
+                pass
+            #TODO: make sure display below won't print too many bytes on screen
         elif self.pattern[0]=="O":
             if self.pattern in self._pattern_list:
                 if self.symbol_unknown:
@@ -1474,9 +1490,10 @@ def InteractiveAssembler(screen):
     program_lines=[LineClass()]
    
     #Main loop
-    redraw_screen=True
+    redraw_text=True
+    last_mode="key"
     while(True):
-        if redraw_screen:
+        if redraw_text:
             screen.clear() 
 
             #Draw headers
@@ -1502,8 +1519,12 @@ def InteractiveAssembler(screen):
                 #Assembled bytes
                 if line.bytes!=[]:
                     draw_x=BYTES_X
-                    for byte in line.bytes:
-                        if byte==[]:
+                    for i,byte in enumerate(line.bytes):
+                        if i==4:
+                            #Max 4 bytes on screen given column width    
+                            CursesText(screen,draw_x,draw_y,"...")
+                            break
+                        elif byte==[]:
                             CursesText(screen,draw_x,draw_y,"??","bytes unknown")
                             CursesText(screen,draw_x+2,draw_y," ")
                         else:
@@ -1557,14 +1578,55 @@ def InteractiveAssembler(screen):
             #Place cursor on input line
             screen.move(LINES_START_Y+current_line,INPUT_X+input_ptr)
             screen.refresh()
-            
-        #Process keys
         
+        #Process keys
         try:
             #One second timeout for key input
             curses.halfdelay(10)
             resimulate=False
             key=screen.getkey()
+            last_mode="key"
+            redraw_text=True
+            if key=="KEY_RESIZE":
+                resimulate=True
+            elif key=="KEY_BACKSPACE":
+                if input_ptr!=0:
+                    input_str=input_str[:input_ptr-1]+input_str[input_ptr:]
+                    input_ptr-=1
+                else:
+                    redraw_text=False
+            elif key=="KEY_LEFT":
+                if input_ptr>0:
+                    input_ptr-=1
+                else:
+                    redraw_text=False
+            elif key=="KEY_RIGHT":
+                if input_ptr<len(input_str):
+                    input_ptr+=1
+                else:
+                    redraw_text=False
+            elif key=="KEY_HOME":
+                if input_ptr!=0:
+                    input_ptr=0
+                else:
+                    redraw_text=False
+            elif key=="KEY_END":
+                if input_ptr!=len(input_str):
+                    input_ptr=len(input_str)
+                else:
+                    redraw_text=False
+            elif key=="KEY_DC":
+                if input_ptr!=len(input_str):
+                    input_str=input_str[:input_ptr]+input_str[input_ptr+1:]
+                else:
+                    redraw_text=False
+            elif len(key)==1 and len(input_str)<MAX_INPUT_LEN:
+                #Avoid escaped characters and other junk
+                if key.isalnum() or key in " ~`!@#$%^&*()_+-={}[];':<>,.?/|\"\\":
+                    input_str=input_str[:input_ptr]+key+input_str[input_ptr:]
+                    input_ptr+=1
+            else:
+                redraw_text=False
         except KeyboardInterrupt:
             #User pressed Ctrl+C - return and exit
             return
@@ -1573,48 +1635,11 @@ def InteractiveAssembler(screen):
             #(Could be other error but curses doesn't have way to distinguish)
             resimulate=True
             key=""
-            pass
-
-        redraw_text=True
-        if key=="KEY_RESIZE":
-            #Redraw screen - redraw_screen already True
-            pass
-        elif key=="KEY_BACKSPACE":
-            if input_ptr!=0:
-                input_str=input_str[:input_ptr-1]+input_str[input_ptr:]
-                input_ptr-=1
+            if last_mode=="key":
+                redraw_text=True
             else:
                 redraw_text=False
-        elif key=="KEY_LEFT":
-            if input_ptr>0:
-                input_ptr-=1
-            else:
-                redraw_text=False
-        elif key=="KEY_RIGHT":
-            if input_ptr<len(input_str):
-                input_ptr+=1
-            else:
-                redraw_text=False
-        elif key=="KEY_HOME":
-            if input_ptr!=0:
-                input_ptr=0
-            else:
-                redraw_text=False
-        elif key=="KEY_END":
-            if input_ptr!=len(input_str):
-                input_ptr=len(input_str)
-            else:
-                redraw_text=False
-        elif key=="KEY_DC":
-            if input_ptr!=len(input_str):
-                input_str=input_str[:input_ptr]+input_str[input_ptr+1:]
-            else:
-                redraw_text=False
-        elif len(key)==1 and len(input_str)<MAX_INPUT_LEN:
-            #Avoid escaped characters and other junk
-            if key.isalnum() or key in " ~`!@#$%^&*()_+-={}[];':<>,.?/|\"\\":
-                input_str=input_str[:input_ptr]+key+input_str[input_ptr:]
-                input_ptr+=1
+            last_mode="timeout"
 
         #Update program line
         if redraw_text:
@@ -1627,6 +1652,8 @@ def InteractiveAssembler(screen):
             program_lines[current_line].address=current_address
             program_lines[current_line].update()
             #TODO: second loop to resimulate if time has passed
+            if resimulate:
+                program_lines[current_line].CPU.A=(program_lines[current_line].CPU.A+1)%256
 
 #Check arguments
 if len(argv)==1:
