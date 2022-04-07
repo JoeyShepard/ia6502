@@ -1290,8 +1290,23 @@ class LineClass:
                 if self.symbol_unknown:
                     self.bytes=[[]]*(self.comma_count+1)
                 else:
-                    
-                    pass
+                    for i,symbol in enumerate(self.simplified_symbol_list[1:]):
+                        symbol_val,symbol_type=symbol
+                        if symbol_type=="number":
+                            if symbol_val<-128 or symbol_val>255:
+                                self.range_error=True
+                                self.bytes=[]
+                                return
+                            elif symbol_val<0:
+                                #Two's compliment for negative values
+                                symbol_val=0x100+symbol_val
+                            self.bytes+=[symbol_val]
+                        elif symbol_type=="string":
+                            for i,char in enumerate(symbol_val[1:]):
+                                #String could be still be being typed - don't print last " character
+                                if not ((i==len(symbol_val)-2) and (char=='"')):
+                                    self.bytes+=[ord(char)]
+                            
             elif self.line_type_symbol_val.upper() in [".DW",".WORD"]:
                 pass
             elif self.line_type_symbol_val.upper() in [".DS",".RS"]:
