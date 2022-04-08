@@ -359,6 +359,7 @@ class LineClass:
         self.raw_str=""             #Raw string as typed by user
         self.raw_str_ptr=0          #Position of cursor in typed input
         self.breakpoint=False       #Breakpoint set for line?
+        self.address=START_ADDRESS  #Address in binary that line represents
         self.CPU=ProcessorClass()   #Status of CPU after executing instruction on line
         self.__reset()
 
@@ -383,7 +384,7 @@ class LineClass:
         self.range_error=False              #Instruction argument out of range?
         self.label=""                       #Instruction label if it exists
         self.comma_count=0                  #Count of commas useful in .BYTE and similar directives
-        self.selected=False                 #Whether cursor is on this line
+        self.selected_line=False            #Whether cursor is on this line
 
         self.debug_msgs=[]                  #Debug messages to be printed when screen redrawn
 
@@ -624,7 +625,10 @@ class LineClass:
                         dir_symbol_count=self._dir_patterns[symbol_val.upper()][0]
                         dir_comma_count=self._dir_patterns[symbol_val.upper()][1]
                         dir_string_allowed=self._dir_patterns[symbol_val.upper()][2]
-                elif not last_symbol:
+
+                START HERE
+
+                elif not last_symbol: #or not self.selected_line:
                     new_symbol=(symbol_val,"error")
                     self.symbol_error=True
             else:
@@ -679,7 +683,7 @@ class LineClass:
                 elif symbol_type=="number":
                     next_symbol="n"
                 elif symbol_type=="hex":
-                    if symbol_val=="$" and not last_symbol:
+                    if symbol_val=="$" and (not last_symbol or not selected_line):
                         new_symbol=(symbol_val,"error")
                         self.symbol_error=True
                     next_symbol="n"
@@ -1466,8 +1470,9 @@ HEADER_Y=0
 
 LINES_START_Y=1
 
+#TODO: put somehwere else
 #Emulator constants
-EMU_START_ADDRESS=0xC000    #Default start address if no .ORG
+START_ADDRESS=0xC000    #Default start address if no .ORG
 
 #Screen output functions
 #=======================
@@ -1522,7 +1527,6 @@ def InteractiveAssembler(screen):
             CursesText(screen,HEADER_X,HEADER_Y,HEADER_TEXT)
 
             #Draw lines
-            line_address=EMU_START_ADDRESS
             for i,line in enumerate(program_lines):
                 #Calculate Y offset once
                 draw_y=LINES_START_Y+i
@@ -1535,7 +1539,7 @@ def InteractiveAssembler(screen):
                     color="line unknown"
                 else:
                     color="none"
-                CursesText(screen,ADDRESS_X,draw_y,Hex4(line_address),color)
+                CursesText(screen,ADDRESS_X,draw_y,Hex4(line.address),color)
                 CursesText(screen,ADDRESS_X+5,draw_y,":")
 
                 #Assembled bytes
@@ -1718,13 +1722,15 @@ def InteractiveAssembler(screen):
         if redraw_text:
             #Clear all labels and symbols
             label_list={}
-            current_address=EMU_START_ADDRESS
+            current_address=START_ADDRESS
             program_lines[current_line].raw_str=input_str
             program_lines[current_line].raw_str_ptr=input_ptr
             for i in range(len(program_lines)):
                 program_lines[i].address=current_address
-                program_lines[i].selected=(i==current_line)
+                program_lines[i].selected_line=True#(i==current_line)
                 program_lines[i].update()
+                current_address+=len(program_lines[i].bytes)
+                #TODO: check writing beyond address range
                 if resimulate:
                     program_lines[i].CPU.A=(program_lines[i].CPU.A+1)%256
 
