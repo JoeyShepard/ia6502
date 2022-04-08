@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-#TODO: SET and XSET
+#TODO: XSET
 #TODO: more comments
 #TODO: screen refresh very noticeable
 #TODO: highight whole expression if out of range?
@@ -12,7 +12,6 @@
 #TODO: ZPR
 #TODO: labels
 #TODO: branches
-#TODO: .set
 
 #TODO at end:
 # - Kowalski cant do LDA 3+(4)
@@ -384,6 +383,7 @@ class LineClass:
         self.range_error=False              #Instruction argument out of range?
         self.label=""                       #Instruction label if it exists
         self.comma_count=0                  #Count of commas useful in .BYTE and similar directives
+        self.selected=False                 #Whether cursor is on this line
 
         self.debug_msgs=[]                  #Debug messages to be printed when screen redrawn
 
@@ -1303,10 +1303,9 @@ class LineClass:
                             self.bytes+=[symbol_val]
                         elif symbol_type=="string":
                             for i,char in enumerate(symbol_val[1:]):
-                                #String could be still be being typed - don't print last " character
+                                #User may still be typing string - don't print last " character
                                 if not ((i==len(symbol_val)-2) and (char=='"')):
                                     self.bytes+=[ord(char)]
-                            
             elif self.line_type_symbol_val.upper() in [".DW",".WORD"]:
                 pass
             elif self.line_type_symbol_val.upper() in [".DS",".RS"]:
@@ -1486,6 +1485,15 @@ def CursesText(screen,draw_x,draw_y,text,color="none"):
     screen.addstr(draw_y,draw_x,text,COLOR_DICT[color])
     return draw_x+len(text)
 
+#Shows key names and values - debug only
+def GetKeyNames(screen):
+    screen.addstr(1,1,"Key: ")
+    while(True):
+        key=screen.getkey()
+        screen.clear()
+        screen.addstr(1,1,"Key: "+key+"("+str(len(key))+")"+" - "+str(ord(key)) if len(key)==1 else "")
+        screen.refresh()
+
 def InteractiveAssembler(screen):
     global label_list
 
@@ -1498,7 +1506,6 @@ def InteractiveAssembler(screen):
 
     #Editor variables
     current_line=0
-    line_offset=0
     key=""
     input_str=""
     input_ptr=0
@@ -1608,16 +1615,52 @@ def InteractiveAssembler(screen):
                 if input_ptr!=0:
                     input_str=input_str[:input_ptr-1]+input_str[input_ptr:]
                     input_ptr-=1
+                elif current_line>0:
+                    if len(program_lines[current_line-1].raw_str)+len(input_str)<=MAX_INPUT_LEN:
+                        del program_lines[current_line]
+                        input_str=program_lines[current_line-1].raw_str+input_str
+                        input_ptr=len(program_lines[current_line-1].raw_str)
+                        current_line-=1
+                    else:
+                        redraw_text=False
                 else:
                     redraw_text=False
             elif key=="KEY_LEFT":
                 if input_ptr>0:
                     input_ptr-=1
+                elif current_line>0:
+                    program_lines[current_line].raw_str=input_str
+                    input_str=program_lines[current_line-1].raw_str
+                    input_ptr=len(input_str)
+                    current_line-=1
                 else:
                     redraw_text=False
             elif key=="KEY_RIGHT":
                 if input_ptr<len(input_str):
                     input_ptr+=1
+                elif current_line<len(program_lines)-1:
+                    program_lines[current_line].raw_str=input_str
+                    input_str=program_lines[current_line+1].raw_str
+                    input_ptr=0
+                    current_line+=1
+                else:
+                    redraw_text=False
+            elif key=="KEY_UP":
+                if current_line>0:
+                    program_lines[current_line].raw_str=input_str
+                    input_str=program_lines[current_line-1].raw_str
+                    if input_ptr>len(input_str):
+                        input_ptr=len(input_str)
+                    current_line-=1
+                else:
+                    redraw_text=False
+            elif key=="KEY_DOWN":
+                if current_line<len(program_lines)-1:
+                    program_lines[current_line].raw_str=input_str
+                    input_str=program_lines[current_line+1].raw_str
+                    if input_ptr>len(input_str):
+                        input_ptr=len(input_str)
+                    current_line+=1
                 else:
                     redraw_text=False
             elif key=="KEY_HOME":
@@ -1633,15 +1676,30 @@ def InteractiveAssembler(screen):
             elif key=="KEY_DC":
                 if input_ptr!=len(input_str):
                     input_str=input_str[:input_ptr]+input_str[input_ptr+1:]
+                elif current_line<len(program_lines)-1:
+                    if len(program_lines[current_line+1].raw_str)+len(input_str)<=MAX_INPUT_LEN:
+                        input_str+=program_lines[current_line+1].raw_str
+                        del program_lines[current_line+1]
+                    else:
+                        redraw_text=False
                 else:
                     redraw_text=False
+            #elif key=="KEY_ENTER":
+            elif key==chr(10):
+                program_lines[current_line].raw_str=input_str[:input_ptr]
+                program_lines.insert(current_line+1,LineClass())
+                current_line+=1
+                input_str=input_str[input_ptr:]
+                input_ptr=0
             elif len(key)==1 and len(input_str)<MAX_INPUT_LEN:
                 #Avoid escaped characters and other junk
                 if key.isalnum() or key in " ~`!@#$%^&*()_+-={}[];':<>,.?/|\"\\":
+                    #TODO: does not work for F1-F12 - inserts multiple characters?
                     input_str=input_str[:input_ptr]+key+input_str[input_ptr:]
                     input_ptr+=1
             else:
                 redraw_text=False
+
         except KeyboardInterrupt:
             #User pressed Ctrl+C - return and exit
             return
@@ -1661,14 +1719,14 @@ def InteractiveAssembler(screen):
             #Clear all labels and symbols
             label_list={}
             current_address=EMU_START_ADDRESS
-            #TODO: loop through all lines and assemble
             program_lines[current_line].raw_str=input_str
             program_lines[current_line].raw_str_ptr=input_ptr
-            program_lines[current_line].address=current_address
-            program_lines[current_line].update()
-            #TODO: second loop to resimulate if time has passed
-            if resimulate:
-                program_lines[current_line].CPU.A=(program_lines[current_line].CPU.A+1)%256
+            for i in range(len(program_lines)):
+                program_lines[i].address=current_address
+                program_lines[i].selected=(i==current_line)
+                program_lines[i].update()
+                if resimulate:
+                    program_lines[i].CPU.A=(program_lines[i].CPU.A+1)%256
 
 #Check arguments
 if len(argv)==1:
@@ -1685,4 +1743,6 @@ else:
 
 #Enter interactive assembler 
 curses.wrapper(InteractiveAssembler)
+if exit_msg!="":
+    print(exit_msg)
 exit(0)
