@@ -6,7 +6,7 @@
 #TODO: highight whole expression if out of range?
 #TODO: generate byte for LDA #
 #TODO: partial effects on flags even if unknown - blank better than ?
-#TODO: support for *
+#TODO: don't allow labels to appear in .ORG or .RS
 
 #Start here:
 #TODO: ZPR
@@ -360,6 +360,7 @@ class LineClass:
         self.breakpoint=False       #Breakpoint set for line?
         self.address=START_ADDRESS  #Address in generated binary that line represents
         self.selected_line=False    #Whether cursor is on this line
+        self.replaced_symbols={}    #Value of symbols on first assembler pass
         self.CPU=ProcessorClass()   #Status of CPU after executing instruction on line
         self.__reset()
 
@@ -676,13 +677,13 @@ class LineClass:
                 elif symbol_type=="label":
                     if found_first or self.label!="":
                         #Label not in first position or label already exists on line
-                        new_symbol=(symbol_val,"error")
+                        new_symbol=(symbol_val+":","error")
                         self.symbol_error=True
                     else:
                         self.label=symbol_val
                         if symbol_val in label_list:
                             #Label double defined
-                            new_symbol=(symbol_val,"error")
+                            new_symbol=(symbol_val+":","error")
                             self.symbol_error=True
                         else:
                             label_list[symbol_val]=self.address
@@ -1045,9 +1046,13 @@ class LineClass:
             new_symbol=symbol
             if symbol_type=="alpha":
                 #Replace alpha/textual symbol with lookup value
-                if symbol_val in label_list:
+                if symbol_val in self.replaced_symbols:
+                    #First, look at symbol values as they were on first pass
+                    #(replaced_symbols empty on first pass)
+                    new_symbol=self.replaced_symbols[symbol_val]
+                elif symbol_val in label_list:
                     new_symbol=(label_list[symbol_val],"number")
-                    self.debug_msgs+=[symbol_val+" found!"]
+                    self.replaced_symbols[symbol_val]=new_symbol
                 elif symbol_val in set_symbol_list:
                     #TODO: set
                     pass
@@ -1336,7 +1341,21 @@ class LineClass:
                                 if not ((i==len(symbol_val)-2) and (char=='"')):
                                     self.bytes+=[ord(char)]
             elif self.line_type_symbol_val.upper() in [".DW",".WORD"]:
-                pass
+                if self.symbol_unknown:
+                    self.bytes=[[]]*(self.comma_count+1)*2
+                else:
+                    for i,symbol in enumerate(self.simplified_symbol_list[1:]):
+                        symbol_val,symbol_type=symbol
+                        if symbol_type=="number":
+                            if symbol_val<-(2**15) or symbol_val>=2**16:
+                                self.range_error=True
+                                self.bytes=[]
+                                return
+                            elif symbol_val<0:
+                                #Two's compliment for negative values
+                                symbol_val=0x10000+symbol_val
+                            self.bytes+=[symbol_val&0xFF]
+                            self.bytes+=[(symbol_val&0xFF00)>>8]
             elif self.line_type_symbol_val.upper() in [".DS",".RS"]:
                 pass
             #TODO: make sure display below won't print too many bytes on screen
@@ -1563,7 +1582,7 @@ def InteractiveAssembler(screen):
                 color="none"
                 if line.symbol_error:
                     color="line error"
-                elif line.symbol_unknown and not line.symbol_unknown_last:
+                elif line.symbol_unknown and (not line.symbol_unknown_last or not line.selected_line):
                     color="line unknown"
                 else:
                     color="none"
@@ -1755,13 +1774,27 @@ def InteractiveAssembler(screen):
             current_address=START_ADDRESS
             program_lines[current_line].raw_str=input_str
             program_lines[current_line].raw_str_ptr=input_ptr
+
+            #First assembler pass
+            symbol_unknown_indexes=[]
             for i in range(len(program_lines)):
                 program_lines[i].address=current_address
                 program_lines[i].selected_line=(i==current_line)
+                program_lines[i].replaced_symbols={}
                 program_lines[i].update()
+                if program_lines[i].symbol_unknown:
+                    symbol_unknown_indexes+=[i]
                 current_address+=len(program_lines[i].bytes)
                 #TODO: check writing beyond address range
-                if resimulate:
+
+            #Fill in forward reference labels
+            for i in symbol_unknown_indexes:
+                program_lines[i].selected_line=(i==current_line)
+                program_lines[i].update()
+                         
+            #Simulate if enough time has passed since last key press
+            if resimulate:
+                for i in range(len(program_lines)):
                     program_lines[i].CPU.A=(program_lines[i].CPU.A+1)%256
 
 #Check arguments
