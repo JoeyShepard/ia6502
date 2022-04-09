@@ -10,7 +10,6 @@
 
 #Start here:
 #TODO: ZPR
-#TODO: labels
 #TODO: branches
 
 #TODO at end:
@@ -535,6 +534,15 @@ class LineClass:
         ('X',')'):')',
         ('n','+'):'+',
         (')','+'):'+',
+        ('','*'):'n',
+        ('n','*'):'+',
+        ('~','*'):'n',
+        ('(','*'):'n',
+        ('m','*'):'n',
+        ('#','*'):'n',
+        (')','*'):'+',
+        ('+','*'):'n',
+        (',','*'):'n',
         ('n',','):',',
         (')',','):',',
         ('d',','):',',
@@ -633,7 +641,7 @@ class LineClass:
                         dir_comma_count=self._dir_patterns[symbol_val.upper()][1]
                         dir_string_allowed=self._dir_patterns[symbol_val.upper()][2]
                 elif symbol_type=="alpha" and last_symbol and self.selected_line:
-                    #Not error if first symbol and currently being typed that could be instruciton or directive
+                    #Not error if first symbol, currently being typed, and could be instruciton or directive
                     pass
                 else:
                     new_symbol=(symbol_val,"error")
@@ -650,6 +658,7 @@ class LineClass:
                         new_symbol=(symbol_val,"error")
                         self.symbol_error=True
 
+                #If name is not instruction, directive, label, or symbol then mark as unknown
                 if symbol_type=="alpha":
                     if symbol_val not in label_list:
                         if symbol_val not in set_symbol_list:
@@ -678,7 +687,7 @@ class LineClass:
                         else:
                             label_list[symbol_val]=self.address
                 elif symbol_type in ["op","dir"]:
-                    #Not first symbol - first symbol checked above
+                    #Not first symbol - whether first symbol checked above
                     new_symbol=(symbol_val,"error")
                     self.symbol_error=True
                 elif symbol_type=="hash":
@@ -729,9 +738,9 @@ class LineClass:
                         if symbol_val=="(":
                             paren_level+=1
                         next_symbol=symbol_val
-                    elif symbol_val in "-":
+                    elif symbol_val=="-":
                         next_symbol=symbol_val
-                    elif symbol_val in ",":
+                    elif symbol_val==",":
                         self.comma_count+=1
                         if self.line_type=="dir":
                             if paren_level!=0:
@@ -748,8 +757,10 @@ class LineClass:
                                 new_symbol=(symbol_val,"error")
                                 self.symbol_error=True
                         next_symbol=symbol_val
-                    elif symbol_val in "+*/%&|^":
+                    elif symbol_val in "+/%&|^":
                         next_symbol="+"
+                    elif symbol_val=="*": 
+                        next_symbol="*"
                     elif symbol_val in "~<>":
                         next_symbol="~"
                     elif symbol_val not in ALLOWED_SYMBOLS:
@@ -1025,16 +1036,17 @@ class LineClass:
         if self.line_type_symbol_val.upper()==".XSET":
             return
 
-        #Try to replace any textual symbols
+        #Try to replace any textual symbols and * for current address
         source_symbol_list=self.symbol_list
         new_symbol_list=[]
+        previous_symbol=("","none")
         for symbol in source_symbol_list:
             symbol_val,symbol_type=symbol
-            new_symbol=[symbol]
+            new_symbol=symbol
             if symbol_type=="alpha":
                 #Replace alpha/textual symbol with lookup value
                 if symbol_val in label_list:
-                    new_symbol=[(label_list[symbol_val],"number")]
+                    new_symbol=(label_list[symbol_val],"number")
                     self.debug_msgs+=[symbol_val+" found!"]
                 elif symbol_val in set_symbol_list:
                     #TODO: set
@@ -1047,7 +1059,14 @@ class LineClass:
                     #Unknown symbol!
                     self.symbol_unknown=True
                     return
-            new_symbol_list+=new_symbol
+            elif symbol==("*","symbol"):
+                previous_symbol_val,previous_symbol_type=previous_symbol
+                if previous_symbol_type in ["none","op","dir","hash"] or \
+                (previous_symbol_type=="symbol" and previous_symbol_val in "~<>-+/%&|^(,"):
+                    new_symbol=(self.address,"number")
+            new_symbol_list+=[new_symbol]
+            if new_symbol!=(" ","symbol"):
+                previous_symbol=new_symbol
         source_symbol_list=new_symbol_list
         
         #Convert leading subtraction sign to minus sign and remove spaces and labels
@@ -1262,7 +1281,7 @@ class LineClass:
             if gen_pattern not in self._pattern_list:
                 #Addressing mode not found - probably incomplete like O*,
                 self.pattern="E"
-                self.debug_pattern_reason="Pattern doesn't match symbol list"
+                self.debug_pattern_reason="Pattern doesn't match symbol list: "+str(self.simplified_symbol_list)
                 return
             
     #List of information about addressing modes
@@ -1493,8 +1512,11 @@ def Hex4(num):
     return ("0000"+hex(num)[2:])[-4:].upper()
 
 def CursesText(screen,draw_x,draw_y,text,color="none"):
-    screen.addstr(draw_y,draw_x,text,COLOR_DICT[color])
-    return draw_x+len(text)
+    try:
+        screen.addstr(draw_y,draw_x,text,COLOR_DICT[color])
+        return draw_x+len(text)
+    except:
+        exit_msg="Error in curses output: "+str(text)
 
 #Shows key names and values - debug only
 def GetKeyNames(screen):
@@ -1572,10 +1594,12 @@ def InteractiveAssembler(screen):
                         CursesText(screen,BYTES_X,draw_y,"Range error!","bytes error")
 
                 #TODO: change
-                CursesText(screen,BYTES_X,draw_y+3,line.pattern+" - "+line.debug_pattern_reason)
-                CursesText(screen,BYTES_X,draw_y+4,str(line.symbol_list))
-                for i,msg in enumerate(line.debug_msgs):
-                    CursesText(screen,BYTES_X,draw_y+i*3+6,msg)
+                if i==current_line:
+                    DEBUG_Y=20
+                    CursesText(screen,BYTES_X,DEBUG_Y+3,line.pattern+" - "+line.debug_pattern_reason)
+                    CursesText(screen,BYTES_X,DEBUG_Y+4,str(line.symbol_list))
+                    for i,msg in enumerate(line.debug_msgs):
+                        CursesText(screen,BYTES_X,DEBUG_Y+i*3+6,msg)
                
                 #Text input
                 draw_x=INPUT_X
