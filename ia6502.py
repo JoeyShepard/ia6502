@@ -1311,11 +1311,22 @@ class LineClass:
  
     #Assign bytes for instruction or directive. Assign only op code if instruction argument contains unresolved symbol.
     def __assign_bytes(self):
+        global current_address
         if self.pattern=="E":
             return
         elif self.pattern=="D":
             if self.line_type_symbol_val.upper()==".ORG":
-                pass
+                if self.symbol_unknown and (not self.selected_line or not self.symbol_unknown_last):
+                    #Argument to .ORG must be known on first pass
+                    self.symbol_error=True
+                    self.symbol_unknown=False
+                elif len(self.simplified_symbol_list)==2:
+                    symbol_val,symbol_type=self.simplified_symbol_list[1]
+                    if symbol_type=="number":
+                        if symbol_val<0 or symbol_val>0xFFFF:
+                            self.range_error=True
+                        else:
+                            current_address=symbol_val
             elif self.line_type_symbol_val.upper()==".SET":
                 pass
             elif self.line_type_symbol_val.upper()==".XSET":
@@ -1329,7 +1340,8 @@ class LineClass:
                         if symbol_type=="number":
                             if symbol_val<-128 or symbol_val>255:
                                 self.range_error=True
-                                self.bytes=[]
+                                #TODO:
+                                #self.bytes=[]
                                 return
                             elif symbol_val<0:
                                 #Two's compliment for negative values
@@ -1517,6 +1529,7 @@ LINES_START_Y=1
 #TODO: put somehwere else
 #Emulator constants
 START_ADDRESS=0xC000    #Default start address if no .ORG
+current_address=0
 
 #Screen output functions
 #=======================
@@ -1548,6 +1561,7 @@ def GetKeyNames(screen):
 
 def InteractiveAssembler(screen):
     global label_list
+    global current_address
 
     #Initialize color pairs
     global COLOR_DICT
@@ -1607,7 +1621,7 @@ def InteractiveAssembler(screen):
                     #Byte list empty - syntax error (handled above), blank line (ignore) or instruction with wrong addressing mode like SEC 5
                     if line.mode_not_found:
                         #Don't warn if only instruction since probably about to type argument 
-                        if len(line.simplified_symbol_list)!=1:
+                        if len(line.simplified_symbol_list)!=1 or not line.selected_line:
                             CursesText(screen,BYTES_X,draw_y,"Mode not found!","bytes error")
                     elif line.range_error:
                         CursesText(screen,BYTES_X,draw_y,"Range error!","bytes error")
@@ -1769,13 +1783,16 @@ def InteractiveAssembler(screen):
 
         #Update program line
         if redraw_text:
-            #Clear all labels and symbols
-            label_list={}
-            current_address=START_ADDRESS
             program_lines[current_line].raw_str=input_str
             program_lines[current_line].raw_str_ptr=input_ptr
 
+            #Clear all labels and symbols
+            label_list={}
+            set_symbol_list={}
+            xset_symbol_list={}
+
             #First assembler pass
+            current_address=START_ADDRESS
             symbol_unknown_indexes=[]
             for i in range(len(program_lines)):
                 program_lines[i].address=current_address
@@ -1787,10 +1804,10 @@ def InteractiveAssembler(screen):
                 current_address+=len(program_lines[i].bytes)
                 #TODO: check writing beyond address range
 
-            #Fill in forward reference labels
-            for i in symbol_unknown_indexes:
-                program_lines[i].selected_line=(i==current_line)
-                program_lines[i].update()
+            #Fill in forward referenced labels
+            #for i in symbol_unknown_indexes:
+                #program_lines[i].selected_line=(i==current_line)
+                #program_lines[i].update()
                          
             #Simulate if enough time has passed since last key press
             if resimulate:
