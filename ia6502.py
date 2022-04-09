@@ -359,7 +359,8 @@ class LineClass:
         self.raw_str=""             #Raw string as typed by user
         self.raw_str_ptr=0          #Position of cursor in typed input
         self.breakpoint=False       #Breakpoint set for line?
-        self.address=START_ADDRESS  #Address in binary that line represents
+        self.address=START_ADDRESS  #Address in generated binary that line represents
+        self.selected_line=False    #Whether cursor is on this line
         self.CPU=ProcessorClass()   #Status of CPU after executing instruction on line
         self.__reset()
 
@@ -384,7 +385,6 @@ class LineClass:
         self.range_error=False              #Instruction argument out of range?
         self.label=""                       #Instruction label if it exists
         self.comma_count=0                  #Count of commas useful in .BYTE and similar directives
-        self.selected_line=False            #Whether cursor is on this line
 
         self.debug_msgs=[]                  #Debug messages to be printed when screen redrawn
 
@@ -426,10 +426,17 @@ class LineClass:
                 else:
                     add_symbol=True
             elif symbol_type=="character":
-                symbol+=char
                 if char=="'":
+                    #Closing ' whether character empty or not
+                    symbol+=char
                     add_symbol=True 
                     char=""
+                elif len(symbol)==1:
+                    #First character after opening '
+                    symbol+=char
+                elif len(symbol)==2:
+                    #Error - second character after opening '
+                    add_symbol=True
             elif symbol_type=="string":
                 symbol+=char
                 if char=='"':
@@ -625,10 +632,10 @@ class LineClass:
                         dir_symbol_count=self._dir_patterns[symbol_val.upper()][0]
                         dir_comma_count=self._dir_patterns[symbol_val.upper()][1]
                         dir_string_allowed=self._dir_patterns[symbol_val.upper()][2]
-
-                START HERE
-
-                elif not last_symbol: #or not self.selected_line:
+                elif symbol_type=="alpha" and last_symbol and self.selected_line:
+                    #Not error if first symbol and currently being typed that could be instruciton or directive
+                    pass
+                else:
                     new_symbol=(symbol_val,"error")
                     self.symbol_error=True
             else:
@@ -683,14 +690,13 @@ class LineClass:
                 elif symbol_type=="number":
                     next_symbol="n"
                 elif symbol_type=="hex":
-                    if symbol_val=="$" and (not last_symbol or not selected_line):
+                    if symbol_val=="$" and (not last_symbol or not self.selected_line):
                         new_symbol=(symbol_val,"error")
                         self.symbol_error=True
                     next_symbol="n"
                 elif symbol_type=="character":
                     if symbol_val=="''" or \
-                    len(symbol_val)>3 or \
-                    (len(symbol_val)==3 and symbol_val[-1]!="'"):
+                    (len(symbol_val)<3 and (not last_symbol or not self.selected_line)):
                         new_symbol=(symbol_val,"error")
                         self.symbol_error=True
                     next_symbol="n"
@@ -780,7 +786,7 @@ class LineClass:
                 #TODO: combine with list below if not processing here
                 self.text_symbol_list+=[(symbol_val,symbol_type)]
             elif symbol_type=="unknown":
-                if last_symbol:
+                if last_symbol and self.selected_line:
                     #Don't color last alpha symbol on line as unknown since may still be typing
                     self.text_symbol_list+=[(symbol_val,"neutral")]
                 else:
@@ -1727,7 +1733,7 @@ def InteractiveAssembler(screen):
             program_lines[current_line].raw_str_ptr=input_ptr
             for i in range(len(program_lines)):
                 program_lines[i].address=current_address
-                program_lines[i].selected_line=True#(i==current_line)
+                program_lines[i].selected_line=(i==current_line)
                 program_lines[i].update()
                 current_address+=len(program_lines[i].bytes)
                 #TODO: check writing beyond address range
