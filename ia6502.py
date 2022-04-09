@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-#TODO: XSET
 #TODO: more comments
 #TODO: screen refresh very noticeable
 #TODO: highight whole expression if out of range?
@@ -273,7 +272,6 @@ for k,v in OP_INFO.items():
 DIRECTIVE_LIST=[
     ".ORG",
     ".SET",
-    ".XSET",
     ".BYTE",".DB",".ASCII",     #Equivalent
     ".DW",".WORD",              #Equivalent
     ".DS",".RS"                 #Equivalent
@@ -326,8 +324,6 @@ COLOR_DICT={}
 label_list={}
 #List of symbols and values defined with .SET
 set_symbol_list={}
-#List of symbols and symbol lists defined with .XSET
-xset_symbol_list={}
 
 
 #Class declarations
@@ -571,7 +567,6 @@ class LineClass:
         #(new symbol count, comma count (-1 being unlimited), string allowed?)
         ".ORG":     (0,0,False),
         ".SET":     (1,1,True),
-        ".XSET":    (1,1,True),
         ".BYTE":    (0,-1,True),
         ".DB":      (0,-1,True),
         ".ASCII":   (0,-1,True),
@@ -585,7 +580,6 @@ class LineClass:
     def __process_symbols(self):
         global label_list
         global set_symbol_list
-        global xset_symbol_list
 
         ALLOWED_SYMBOLS="~(),+-*/&|^%<> "
         new_symbol_list=[]
@@ -650,7 +644,7 @@ class LineClass:
                     self.symbol_error=True
             else:
                 if self.line_type=="dir" and second_symbol and dir_symbol_count==1:
-                    #First word after .SET or .XSET is name of new symbol
+                    #First word after .SET is name of new symbol
                     if symbol_type=="alpha":
                         if symbol_val not in label_list:
                             symbol_type="definition"
@@ -669,14 +663,11 @@ class LineClass:
                 if symbol_type=="alpha":
                     if symbol_val not in label_list:
                         if symbol_val not in set_symbol_list:
-                            if symbol_val not in xset_symbol_list:
-                                #Unrecognized word - textual symbol or label not yet defined
-                                if self.line_type_symbol_val.upper()!=".XSET":
-                                    #Don't mark symbols in .XSET statement as unknown
-                                    new_symbol=(symbol_val,"unknown")
-                                    if last_symbol and not self.symbol_unknown:
-                                        self.symbol_unknown_last=True
-                                    self.symbol_unknown=True
+                            #Unrecognized word - textual symbol or label not yet defined
+                            new_symbol=(symbol_val,"unknown")
+                            if last_symbol and not self.symbol_unknown:
+                                self.symbol_unknown_last=True
+                            self.symbol_unknown=True
                     next_symbol="n"
                 elif symbol_type=="error":
                     self.symbol_error=True
@@ -693,8 +684,8 @@ class LineClass:
                                 #Label double defined
                                 new_symbol=(symbol_val+":","error")
                                 self.symbol_error=True
-                            elif symbol_val in set_symbol_list or symbol_val in xset_symbol_list:
-                                #Label can't share name with symbol defined with .SET or .XSET
+                            elif symbol_val in set_symbol_list:
+                                #Label can't share name with symbol defined with .SET
                                 new_symbol=(symbol_val+":","error")
                                 self.symbol_error=True
                             else:
@@ -1031,7 +1022,6 @@ class LineClass:
     def __simplify_symbols(self):
         global label_list
         global set_symbol_list
-        global xset_symbol_list
 
         #Don't simplify if error in symbol list
         if self.pattern=="E":
@@ -1043,10 +1033,6 @@ class LineClass:
 
         #Don't simplify if unresolved symbols
         if self.symbol_unknown:
-            return
-
-        #Don't simplify if .XSET - wait until symbol invoked
-        if self.line_type_symbol_val.upper()==".XSET":
             return
 
         #Try to replace any textual symbols and * for current address
@@ -1068,10 +1054,6 @@ class LineClass:
                 elif symbol_val in set_symbol_list:
                     new_symbol=set_symbol_list[symbol_val]
                     self.replaced_symbols[symbol_val]=new_symbol
-                elif symbol_val in xset_symbol_list:
-                    #TODO: xset
-                    #TODO: don't let string into instruction
-                    pass
                 else:
                     #Unknown symbol!
                     self.symbol_unknown=True
@@ -1324,7 +1306,6 @@ class LineClass:
     def __assign_bytes(self):
         global current_address
         global set_symbol_list
-        global xset_symbol_list
 
         if self.pattern=="E":
             return
@@ -1346,9 +1327,6 @@ class LineClass:
                     _,symbol_name,_,symbol_val=self.simplified_symbol_list
                     symbol_name,_=symbol_name
                     set_symbol_list[symbol_name]=symbol_val
-            elif self.line_type_symbol_val.upper()==".XSET":
-                #TODO
-                pass
             elif self.line_type_symbol_val.upper() in [".BYTE",".DB",".ASCII"]:
                 if self.symbol_unknown:
                     self.bytes=[[]]*(self.comma_count+1)
@@ -1747,6 +1725,8 @@ def InteractiveAssembler(screen):
                     if input_ptr>len(input_str):
                         input_ptr=len(input_str)
                     current_line-=1
+                elif input_ptr>0:
+                    input_ptr=0
                 else:
                     redraw_text=False
             elif key=="KEY_DOWN":
@@ -1756,6 +1736,8 @@ def InteractiveAssembler(screen):
                     if input_ptr>len(input_str):
                         input_ptr=len(input_str)
                     current_line+=1
+                elif input_ptr<len(input_str):
+                    input_ptr=len(input_str)
                 else:
                     redraw_text=False
             elif key=="KEY_HOME":
@@ -1817,7 +1799,6 @@ def InteractiveAssembler(screen):
             #Clear all labels and symbols
             label_list={}
             set_symbol_list={}
-            xset_symbol_list={}
 
             #First assembler pass
             current_address=START_ADDRESS
