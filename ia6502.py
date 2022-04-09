@@ -361,6 +361,7 @@ class LineClass:
         self.address=START_ADDRESS  #Address in generated binary that line represents
         self.selected_line=False    #Whether cursor is on this line
         self.replaced_symbols={}    #Value of symbols on first assembler pass
+        self.pass_number=1          #Assembly pass number - 1 or 2
         self.CPU=ProcessorClass()   #Status of CPU after executing instruction on line
         self.__reset()
 
@@ -651,9 +652,14 @@ class LineClass:
                 if self.line_type=="dir" and second_symbol and dir_symbol_count==1:
                     #First word after .SET or .XSET is name of new symbol
                     if symbol_type=="alpha":
-                        symbol_type="definition"
-                        new_symbol=(symbol_val,"definition")
-                        next_symbol="d"
+                        if symbol_val not in label_list:
+                            symbol_type="definition"
+                            new_symbol=(symbol_val,"definition")
+                            next_symbol="d"
+                        else:
+                            #Symbol can't have name of label
+                            new_symbol=(symbol_val,"error")
+                            self.symbol_error=True
                     else:
                         #Only textual objects can be assigned a value
                         new_symbol=(symbol_val,"error")
@@ -681,12 +687,18 @@ class LineClass:
                         self.symbol_error=True
                     else:
                         self.label=symbol_val
-                        if symbol_val in label_list:
-                            #Label double defined
-                            new_symbol=(symbol_val+":","error")
-                            self.symbol_error=True
-                        else:
-                            label_list[symbol_val]=self.address
+                        if self.pass_number==1:
+                            #Only find record label address on first pass
+                            if symbol_val in label_list:
+                                #Label double defined
+                                new_symbol=(symbol_val+":","error")
+                                self.symbol_error=True
+                            elif symbol_val in set_symbol_list or symbol_val in xset_symbol_list:
+                                #Label can't share name with symbol defined with .SET or .XSET
+                                new_symbol=(symbol_val+":","error")
+                                self.symbol_error=True
+                            else:
+                                label_list[symbol_val]=self.address
                 elif symbol_type in ["op","dir"]:
                     #Not first symbol - whether first symbol checked above
                     new_symbol=(symbol_val,"error")
@@ -1054,8 +1066,8 @@ class LineClass:
                     new_symbol=(label_list[symbol_val],"number")
                     self.replaced_symbols[symbol_val]=new_symbol
                 elif symbol_val in set_symbol_list:
-                    #TODO: set
-                    pass
+                    new_symbol=set_symbol_list[symbol_val]
+                    self.replaced_symbols[symbol_val]=new_symbol
                 elif symbol_val in xset_symbol_list:
                     #TODO: xset
                     #TODO: don't let string into instruction
@@ -1256,8 +1268,6 @@ class LineClass:
     #Make sure pattern generated from input matches simplified symbol list
     #(Mostly a sanity check since all syntax errors should be caught above)
     def __verify_pattern(self):
-        #TODO: use line type instead?
-        
         #Do not verify assembly directives or instructions with syntax errors
         if self.pattern in ["E","D"]:
             return
@@ -1313,6 +1323,9 @@ class LineClass:
     #Assign bytes for instruction or directive. Assign only op code if instruction argument contains unresolved symbol.
     def __assign_bytes(self):
         global current_address
+        global set_symbol_list
+        global xset_symbol_list
+
         if self.pattern=="E":
             return
         elif self.pattern=="D":
@@ -1329,8 +1342,10 @@ class LineClass:
                         else:
                             current_address=symbol_val
             elif self.line_type_symbol_val.upper()==".SET":
-                #TODO
-                pass
+                if len(self.simplified_symbol_list)==4:
+                    _,symbol_name,_,symbol_val=self.simplified_symbol_list
+                    symbol_name,_=symbol_name
+                    set_symbol_list[symbol_name]=symbol_val
             elif self.line_type_symbol_val.upper()==".XSET":
                 #TODO
                 pass
@@ -1811,6 +1826,7 @@ def InteractiveAssembler(screen):
                 program_lines[i].address=current_address
                 program_lines[i].selected_line=(i==current_line)
                 program_lines[i].replaced_symbols={}
+                program_lines[i].pass_number=1
                 program_lines[i].update()
                 if program_lines[i].symbol_unknown:
                     symbol_unknown_indexes+=[i]
@@ -1818,9 +1834,10 @@ def InteractiveAssembler(screen):
                 #TODO: check writing beyond address range
 
             #Fill in forward referenced labels
-            #for i in symbol_unknown_indexes:
-                #program_lines[i].selected_line=(i==current_line)
-                #program_lines[i].update()
+            for i in symbol_unknown_indexes:
+                program_lines[i].selected_line=(i==current_line)
+                program_lines[i].pass_number=2
+                program_lines[i].update()
                          
             #Simulate if enough time has passed since last key press
             if resimulate:
