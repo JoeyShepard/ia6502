@@ -2,9 +2,8 @@
 
 #TODO: more comments
 #TODO: screen refresh very noticeable
-#TODO: highight whole expression if out of range?
-#TODO: generate byte for LDA #
 #TODO: partial effects on flags even if unknown - blank better than ?
+#TODO: limit number of new lines or scroll
 
 #Start here:
 #TODO: ZPR
@@ -661,7 +660,7 @@ class LineClass:
 
                 #If name is not instruction, directive, label, or symbol then mark as unknown
                 if symbol_type=="alpha":
-                    if symbol_val in set_symbol_list:
+                    if symbol_val in set_symbol_list and self.pass_number==1:
                         #Don't let symbol containing string into instruction
                         if self.line_type=="op":
                             if set_symbol_list[symbol_val][1]=="string":
@@ -776,8 +775,8 @@ class LineClass:
                         new_symbol=(symbol_val,"error")
                         self.symbol_error=True
                 else:
-                    #TODO: better error handling
-                    exit(1)
+                    new_symbol=(symbol_val,"error")
+                    self.symbol_error=True
                 
             #Check for valid expression with state machine
             if self.symbol_error==False:
@@ -1048,15 +1047,15 @@ class LineClass:
             symbol_val,symbol_type=symbol
             new_symbol=symbol
             if symbol_type=="alpha":
+                self.debug_msgs+=[str(self.replaced_symbols)+" | "+str(set_symbol_list)]
                 #Replace alpha/textual symbol with lookup value
-                if symbol_val in self.replaced_symbols:
+                if symbol_val in self.replaced_symbols and self.pass_number==2:
                     #First, look at symbol values as they were on first pass
-                    #(replaced_symbols empty on first pass)
                     new_symbol=self.replaced_symbols[symbol_val]
                 elif symbol_val in label_list:
                     new_symbol=(label_list[symbol_val],"number")
-                    self.replaced_symbols[symbol_val]=new_symbol
-                elif symbol_val in set_symbol_list:
+                elif symbol_val in set_symbol_list and self.pass_number==1:
+                    #Only look at symbols defined with .SET if on first pass to prevent forward reference
                     new_symbol=set_symbol_list[symbol_val]
                     self.replaced_symbols[symbol_val]=new_symbol
                 else:
@@ -1285,6 +1284,8 @@ class LineClass:
                 #Addressing mode not found - probably incomplete like O*,
                 self.pattern="E"
                 self.debug_pattern_reason="Pattern doesn't match symbol list: "+str(self.simplified_symbol_list)
+                if not self.selected_line:
+                    self.symbol_error=True
                 return
             
     #List of information about addressing modes
@@ -1381,7 +1382,6 @@ class LineClass:
                             self.range_error=True
                         else:
                             current_address+=symbol_val
-            #TODO: make sure display below won't print too many bytes on screen
         elif self.pattern[0]=="O":
             if self.pattern in self._pattern_list:
                 if self.symbol_unknown:
@@ -1399,7 +1399,7 @@ class LineClass:
                     #Instruction does not have matching addressing mode
                     self.mode_not_found=True
                 else:
-                    #TODO: Addressing mode exists - try to generate full instruction
+                    #Addressing mode exists - try to generate full instruction
                     op_name=self.line_type_symbol_val.upper()
                     for mode in self._pattern_list[self.pattern]:
                         for op in OP_INFO_NAME[op_name]:
@@ -1428,7 +1428,7 @@ class LineClass:
 
                                     #Check if shorter zero page addressing mode exists and address in range
                                     zp_mode=self._addressing_mode_list[mode][1]
-                                    if zp_mode and arg_val in range(0x100):
+                                    if zp_mode and arg_val in range(0x100) and self.pass_number==1:
                                         #Check that zero page addressing exists for instruction, ie LDA $1234,Y doesn't have LDA $34,Y
                                         zp_op_code=[v[0] for v in OP_INFO_NAME[op_name] if v[INDEX_MODE+1]==zp_mode]
                                         if zp_op_code!=[]:
@@ -1464,8 +1464,9 @@ class LineClass:
                     self.mode_not_found=True
                     return
             else:
-                #TODO: Addressing mode not found - ie O*, since stil typing
-                pass
+                #Addressing mode not found - ie O*, since stil typing
+                if not self.selected_line:
+                    self.symbol_error=True
 
     def update(self):
         self.__reset()
@@ -1573,6 +1574,7 @@ def GetKeyNames(screen):
 def InteractiveAssembler(screen):
     global label_list
     global current_address
+    global set_symbol_list
 
     #Initialize color pairs
     global COLOR_DICT
