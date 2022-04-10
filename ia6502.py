@@ -5,10 +5,6 @@
 #TODO: partial effects on flags even if unknown - blank better than ?
 #TODO: limit number of new lines or scroll
 
-#Start here:
-#TODO: ZPR
-#TODO: branches
-
 #TODO at end:
 # - Kowalski cant do LDA 3+(4)
 # - double check all debug_msgs removed
@@ -1417,12 +1413,41 @@ class LineClass:
                                     if arg_val<-128 or arg_val>255:
                                         self.range_error=True
                                     elif arg_val<0:
-                                        #Two's compliment for negative immediates
+                                        #Two's complement for negative immediates
                                         arg_val=0x100+arg_val
                                     temp_bytes+=[arg_val]
                                 elif mode=="IMP":
                                     #Implied addressing - no arguments to check or generate bytes for
                                     pass
+                                elif mode=="REL":
+                                    arg_val=self.simplified_symbol_list[1][0]
+                                    if arg_val<0 or arg_val>0xFFFF:
+                                        self.range_error=True
+                                    else:
+                                        new_address=arg_val-self.address-2
+                                        if new_address<-128 or new_address>127:
+                                            self.range_error=True
+                                        elif new_address<0:
+                                            #Two's complement for relative branch target
+                                            new_address=0x100+new_address
+                                        temp_bytes+=[new_address]
+                                elif mode=="ZPR":
+                                    arg_val=self.simplified_symbol_list[1][0]
+                                    if arg_val<0 or arg_val>0xFF:
+                                        self.range_error=True
+                                    else:
+                                        temp_bytes+=[arg_val] 
+                                    arg_val=self.simplified_symbol_list[3][0]
+                                    if arg_val<0 or arg_val>0xFFFF:
+                                        self.range_error=True
+                                    else:
+                                        new_address=arg_val-self.address-3
+                                        if new_address<-128 or new_address>127:
+                                            self.range_error=True
+                                        elif new_address<0:
+                                            #Two's complement for relative branch target
+                                            new_address=0x100+new_address
+                                        temp_bytes+=[new_address]
                                 else:
                                     arg_val=self.simplified_symbol_list[1][0]
 
