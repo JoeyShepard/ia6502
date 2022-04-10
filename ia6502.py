@@ -661,13 +661,18 @@ class LineClass:
 
                 #If name is not instruction, directive, label, or symbol then mark as unknown
                 if symbol_type=="alpha":
-                    if symbol_val not in label_list:
-                        if symbol_val not in set_symbol_list:
-                            #Unrecognized word - textual symbol or label not yet defined
-                            new_symbol=(symbol_val,"unknown")
-                            if last_symbol and not self.symbol_unknown:
-                                self.symbol_unknown_last=True
-                            self.symbol_unknown=True
+                    if symbol_val in set_symbol_list:
+                        #Don't let symbol containing string into instruction
+                        if self.line_type=="op":
+                            if set_symbol_list[symbol_val][1]=="string":
+                                new_symbol=(symbol_val,"error")
+                                self.symbol_error=True
+                    elif symbol_val not in label_list:
+                        #Unrecognized word - textual symbol or label not yet defined
+                        new_symbol=(symbol_val,"unknown")
+                        if last_symbol and not self.symbol_unknown:
+                            self.symbol_unknown_last=True
+                        self.symbol_unknown=True
                     next_symbol="n"
                 elif symbol_type=="error":
                     self.symbol_error=True
