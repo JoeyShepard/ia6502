@@ -4,7 +4,6 @@
 #TODO: screen refresh very noticeable
 #TODO: partial effects on flags even if unknown - blank better than ?
 #TODO: limit number of new lines or scroll
-#TODO: double check enumerate
 
 #TODO at end:
 # - Kowalski cant do LDA 3+(4)
@@ -1570,6 +1569,7 @@ LINES_START_Y=1
 START_ADDRESS=0xC000    #Default start address if no .ORG
 current_address=0
 emu_mem=[]
+program_lines=[LineClass()]
 
 #Screen output functions
 #=======================
@@ -1600,13 +1600,96 @@ def GetKeyNames(screen):
         screen.refresh()
 
 def DrawAssembler(screen):
-    return
+    global program_lines
+
+    screen.clear() 
+
+    #Draw headers
+    CursesText(screen,HEADER_X,HEADER_Y,HEADER_TEXT)
+
+    #Draw lines
+    for i,line in enumerate(program_lines):
+        #Calculate Y offset once
+        draw_y=LINES_START_Y+i
+
+        #Address
+        if line.symbol_error or line.address==-1:
+            color="line error"
+        elif line.symbol_unknown and (not line.symbol_unknown_last or not line.selected_line):
+            color="line unknown"
+        else:
+            color="none"
+        
+        if line.address==-1:
+            address="????"
+        else:
+            address=Hex4(line.address)
+        
+        CursesText(screen,ADDRESS_X,draw_y,address,color)
+        CursesText(screen,ADDRESS_X+5,draw_y,":")
+
+        #Assembled bytes
+        if line.byte_overlap:
+            CursesText(screen,BYTES_X,draw_y,"Byte overlap!","bytes error")
+        elif line.bytes!=[]:
+            draw_x=BYTES_X
+            for i,byte in enumerate(line.bytes):
+                if i==4:
+                    #Max 4 bytes on screen given column width    
+                    CursesText(screen,draw_x,draw_y,"...")
+                    break
+                elif byte==[]:
+                    CursesText(screen,draw_x,draw_y,"??","bytes unknown")
+                    CursesText(screen,draw_x+2,draw_y," ")
+                else:
+                    CursesText(screen,draw_x,draw_y,Hex2(byte)+" ")
+                draw_x+=3
+        else:
+            #Byte list empty - syntax error (handled above), blank line (ignore) or instruction with wrong addressing mode like SEC 5
+            if line.mode_not_found:
+                #Don't warn if only instruction since probably about to type argument 
+                if len(line.simplified_symbol_list)!=1 or not line.selected_line:
+                    CursesText(screen,BYTES_X,draw_y,"Mode not found!","bytes error")
+            elif line.range_error:
+                CursesText(screen,BYTES_X,draw_y,"Range error!","bytes error")
+
+      
+        #Text input
+        draw_x=INPUT_X
+        for obj in line.text_symbol_list:
+            text,color=obj
+            CursesText(screen,draw_x,draw_y,text,color)
+            draw_x+=len(text)
+        
+        #Registers
+        reg_A=line.CPU.A
+        if reg_A<32 or (reg_A>=127 and reg_A<=160):
+            reg_A_char=" "
+        else:
+            reg_A_char=chr(reg_A)
+        CursesText(screen,REG_A_X,draw_y,"$"+Hex2(line.CPU.A)+"("+reg_A_char+")")
+        CursesText(screen,REG_X_X,draw_y,"$"+Hex2(line.CPU.X))
+        CursesText(screen,REG_Y_X,draw_y,"$"+Hex2(line.CPU.Y))
+        CursesText(screen,REG_SP_X,draw_y,"$"+Hex2(line.CPU.SP))
+        
+        #Flags
+        if line.CPU.regs_valid:
+            flag_output=""
+            flag_output+="N" if line.CPU.N==1 else "n"
+            flag_output+="V" if line.CPU.V==1 else "v"
+            flag_output+="-B"
+            flag_output+="D" if line.CPU.D==1 else "d"
+            flag_output+="I" if line.CPU.I==1 else "i"
+            flag_output+="Z" if line.CPU.Z==1 else "z"
+            flag_output+="C" if line.CPU.C==1 else "c"
+            CursesText(screen,FLAGS_X,draw_y,flag_output)
 
 def InteractiveAssembler(screen):
     global label_list
     global current_address
     global set_symbol_list
     global emu_mem
+    global program_lines
 
     #Initialize color pairs
     global COLOR_DICT
@@ -1620,106 +1703,26 @@ def InteractiveAssembler(screen):
     key=""
     input_str=""
     input_ptr=0
-    program_lines=[LineClass()]
    
     #Main loop
     redraw_text=True
     last_mode="key"
     while(True):
         if redraw_text:
-            screen.clear() 
+            DrawAssembler(screen)
 
-            #Draw headers
-            CursesText(screen,HEADER_X,HEADER_Y,HEADER_TEXT)
-
-            #Draw lines
-            for i,line in enumerate(program_lines):
-                #Calculate Y offset once
-                draw_y=LINES_START_Y+i
-
-                #Address
-                if line.symbol_error or line.address==-1:
-                    color="line error"
-                elif line.symbol_unknown and (not line.symbol_unknown_last or not line.selected_line):
-                    color="line unknown"
-                else:
-                    color="none"
-                
-                if line.address==-1:
-                    address="????"
-                else:
-                    address=Hex4(line.address)
-                
-                CursesText(screen,ADDRESS_X,draw_y,address,color)
-                CursesText(screen,ADDRESS_X+5,draw_y,":")
-
-                #Assembled bytes
-                if line.byte_overlap:
-                    CursesText(screen,BYTES_X,draw_y,"Byte overlap!","bytes error")
-                elif line.bytes!=[]:
-                    draw_x=BYTES_X
-                    for i,byte in enumerate(line.bytes):
-                        if i==4:
-                            #Max 4 bytes on screen given column width    
-                            CursesText(screen,draw_x,draw_y,"...")
-                            break
-                        elif byte==[]:
-                            CursesText(screen,draw_x,draw_y,"??","bytes unknown")
-                            CursesText(screen,draw_x+2,draw_y," ")
-                        else:
-                            CursesText(screen,draw_x,draw_y,Hex2(byte)+" ")
-                        draw_x+=3
-                else:
-                    #Byte list empty - syntax error (handled above), blank line (ignore) or instruction with wrong addressing mode like SEC 5
-                    if line.mode_not_found:
-                        #Don't warn if only instruction since probably about to type argument 
-                        if len(line.simplified_symbol_list)!=1 or not line.selected_line:
-                            CursesText(screen,BYTES_X,draw_y,"Mode not found!","bytes error")
-                    elif line.range_error:
-                        CursesText(screen,BYTES_X,draw_y,"Range error!","bytes error")
-
-                #TODO: change
-                if i==current_line:
-                    DEBUG_Y=20
-                    CursesText(screen,BYTES_X,DEBUG_Y+3,line.pattern+" - "+line.debug_pattern_reason)
-                    CursesText(screen,BYTES_X,DEBUG_Y+4,str(line.symbol_list))
-                    for i,msg in enumerate(line.debug_msgs):
-                        CursesText(screen,BYTES_X,DEBUG_Y+i*3+6,msg)
-               
-                #Text input
-                draw_x=INPUT_X
-                for obj in line.text_symbol_list:
-                    text,color=obj
-                    CursesText(screen,draw_x,draw_y,text,color)
-                    draw_x+=len(text)
-                
-                #Registers
-                reg_A=line.CPU.A
-                if reg_A<32 or (reg_A>=127 and reg_A<=160):
-                    reg_A_char=" "
-                else:
-                    reg_A_char=chr(reg_A)
-                CursesText(screen,REG_A_X,draw_y,"$"+Hex2(line.CPU.A)+"("+reg_A_char+")")
-                CursesText(screen,REG_X_X,draw_y,"$"+Hex2(line.CPU.X))
-                CursesText(screen,REG_Y_X,draw_y,"$"+Hex2(line.CPU.Y))
-                CursesText(screen,REG_SP_X,draw_y,"$"+Hex2(line.CPU.SP))
-                
-                #Flags
-                if line.CPU.regs_valid:
-                    flag_output=""
-                    flag_output+="N" if line.CPU.N==1 else "n"
-                    flag_output+="V" if line.CPU.V==1 else "v"
-                    flag_output+="-B"
-                    flag_output+="D" if line.CPU.D==1 else "d"
-                    flag_output+="I" if line.CPU.I==1 else "i"
-                    flag_output+="Z" if line.CPU.Z==1 else "z"
-                    flag_output+="C" if line.CPU.C==1 else "c"
-                    CursesText(screen,FLAGS_X,draw_y,flag_output)
-
+            #TODO: change
+            if i==current_line:
+                DEBUG_Y=20
+                CursesText(screen,BYTES_X,DEBUG_Y+3,line.pattern+" - "+line.debug_pattern_reason)
+                CursesText(screen,BYTES_X,DEBUG_Y+4,str(line.symbol_list))
+                for i,msg in enumerate(line.debug_msgs):
+                    CursesText(screen,BYTES_X,DEBUG_Y+i*3+6,msg)
+ 
             #Place cursor on input line
             screen.move(LINES_START_Y+current_line,INPUT_X+input_ptr)
             screen.refresh()
-        
+
         #Process keys
         try:
             #One second timeout for key input
@@ -1849,15 +1852,15 @@ def InteractiveAssembler(screen):
             #First assembler pass
             current_address=START_ADDRESS
             symbol_unknown_indexes=[]
-            for i in range(len(program_lines)):
-                program_lines[i].address=current_address
-                program_lines[i].selected_line=(i==current_line)
-                program_lines[i].replaced_symbols={}
-                program_lines[i].pass_number=1
-                program_lines[i].update()
-                if program_lines[i].symbol_unknown:
+            for i,line in enumerate(program_lines):
+                line.address=current_address
+                line.selected_line=(i==current_line)
+                line.replaced_symbols={}
+                line.pass_number=1
+                line.update()
+                if line.symbol_unknown:
                     symbol_unknown_indexes+=[i]
-                current_address+=len(program_lines[i].bytes)
+                current_address+=len(line.bytes)
 
             #Fill in forward referenced labels
             for i in symbol_unknown_indexes:
@@ -1868,21 +1871,37 @@ def InteractiveAssembler(screen):
             #Insert generated bytes into emulator memory
             #(Do here in separate loop so overlap errors flagged in order they appear in source)
             emu_mem=[-1]*(2**16)
-            for line in program_lines:
-                if line.bytes==[] and line.address>0xFFFF:
+            emu_addresses={}
+            for i,line in enumerate(program_lines):
+                if line.address>0xFFFF:
+                    #Mark address invalid if out of range even if no bytes generated
                     line.address=-1
-                else:
+                calc_address=line.address
+                exit_early=False
+                new_bytes=[]
+                for byte in line.bytes:
+                    if calc_address>0xFFFF:
+                        #Mark address invalid if generated byte out of range
+                        line.address=-1
+                        exit_early=True
+                    elif emu_mem[calc_address]!=-1:
+                        #Mark address as overlapped if byte already exists at address
+                        line.byte_overlap=True
+                        exit_early=True
+                    elif not line.symbol_unknown:
+                        #Save byte for writing to memory unless line contains unresolved symbols
+                        new_bytes+=[byte]
+                        calc_address+=1
+                    if exit_early:
+                        break
+
+                #If loop above successful, insert bytes into memory
+                if not exit_early:
                     calc_address=line.address
-                    for byte in line.bytes:
-                        if calc_address>0xFFFF:
-                            line.address=-1
-                            break
-                        elif emu_mem[calc_address]!=-1:
-                            line.byte_overlap=True
-                            break
-                        else:
-                            emu_mem[calc_address]=byte
-                            calc_address+=1
+                    for byte in new_bytes:
+                        emu_mem[calc_address]=byte
+                        emu_addresses[calc_address]=i
+                        calc_address+=1
 
             #Simulate if enough time has passed since last key press
             if resimulate:
@@ -1904,6 +1923,23 @@ else:
 
 #Enter interactive assembler 
 curses.wrapper(InteractiveAssembler)
+
+#TODO: remove
+DEBUG=0
+if DEBUG:
+    with open("debug.txt","wt") as f:
+        for i in range(16):
+            address=0xC000+i*16
+            f.write(Hex4(address)+":")
+            for j in range(16):
+                if emu_mem[address+j]==-1:
+                    f.write("XX ")
+                else:
+                    f.write(Hex2(emu_mem[address+j])+" ")
+            f.write("\n")
+
+
+
 if exit_msg!="":
     print(exit_msg)
 exit(0)
