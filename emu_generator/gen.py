@@ -234,7 +234,7 @@ INDEX_BCD_CYCLE=7
 INDEX_FLAGS=8
 INDEX_AFFECTS=9
 
-with open("emu-ops.py","wt") as f:
+with open("emu_ops.py","wt") as f:
     mode_set=set()
     op_list="emu_ops=[\n"
     for i in range(0x100):
@@ -245,10 +245,10 @@ with open("emu-ops.py","wt") as f:
             name=OP_INFO[i][INDEX_NAME]
             mode=OP_INFO[i][INDEX_MODE]
             output=name+"_"+mode+","
-            f.write("def "+name+"_"+mode+"(emu_PC,old_CPU,new_CPU): #0x"+Hex2(i)+"\n")
+            f.write("def "+name+"_"+mode+"(emu_line): #0x"+Hex2(i)+"\n")
             if mode not in ["IMP"]:
-                f.write("\taddress,data=mode_"+mode+"(emu_PC,old_CPU)\n")
-            f.write("\top_"+name+"(old_CPU,new_CPU,address,data)\n")
+                f.write("\taddress,data=mode_"+mode+"(emu_line)\n")
+            f.write("\top_"+name+"(emu_line,address,data)\n")
             f.write("\n")
 
             mode_set.add(OP_INFO[i][INDEX_MODE])
