@@ -15,6 +15,7 @@
 from sys import path, argv
 from sys import exit
 import curses
+from emu_generator.emu_ops import *
 
 #Generated from spreadsheet - edit there and copy here
 OP_INFO={
@@ -233,7 +234,6 @@ OP_INFO={
 0xFF:("BBS7","ZPR",3,5,"Yes","","","","none","none")
 
 }
-
 
 #Instruction information list indexes
 INDEX_NAME=0
@@ -1535,6 +1535,12 @@ class LineClass:
                 temp_obj.update()
                 f.write(test+" - "+temp_obj.pattern+"\n")
 
+#Emulation functions
+#===================
+
+
+
+
 #Constants for screen output
 #===========================
 
@@ -1685,7 +1691,7 @@ def DrawAssembler(screen):
             CursesText(screen,REG_Y_X,draw_y,"$"+Hex2(line.CPU.Y))
             CursesText(screen,REG_SP_X,draw_y,"$"+Hex2(line.CPU.SP))
         
-        #Flags
+            #Flags
             flag_output=""
             flag_output+="N" if line.CPU.N==1 else "n"
             flag_output+="V" if line.CPU.V==1 else "v"
