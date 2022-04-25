@@ -1,814 +1,1063 @@
 #!/usr/bin/env python3
 def BRK_IMP(emu_line): #0x00
-	op_BRK(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_BRK(emu_line,address,data)
+	return address+1
 
 def ORA_IZX(emu_line): #0x01
 	address,data=mode_IZX(emu_line)
-	op_ORA(emu_line,address,data)
+	address=op_ORA(emu_line,address,data)
+	return address+2
 
 def TSB_ZP(emu_line): #0x04
 	address,data=mode_ZP(emu_line)
-	op_TSB(emu_line,address,data)
+	address=op_TSB(emu_line,address,data)
+	return address+2
 
 def ORA_ZP(emu_line): #0x05
 	address,data=mode_ZP(emu_line)
-	op_ORA(emu_line,address,data)
+	address=op_ORA(emu_line,address,data)
+	return address+2
 
 def ASL_ZP(emu_line): #0x06
 	address,data=mode_ZP(emu_line)
-	op_ASL(emu_line,address,data)
+	address=op_ASL(emu_line,address,data)
+	return address+2
 
 def RMB0_ZP(emu_line): #0x07
 	address,data=mode_ZP(emu_line)
-	op_RMB0(emu_line,address,data)
+	address=op_RMB0(emu_line,address,data)
+	return address+2
 
 def PHP_IMP(emu_line): #0x08
-	op_PHP(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_PHP(emu_line,address,data)
+	return address+1
 
 def ORA_IMMED(emu_line): #0x09
 	address,data=mode_IMMED(emu_line)
-	op_ORA(emu_line,address,data)
+	address=op_ORA(emu_line,address,data)
+	return address+2
 
 def ASL_IMP(emu_line): #0x0A
-	op_ASL(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_ASL(emu_line,address,data)
+	return address+1
 
 def TSB_ABS(emu_line): #0x0C
 	address,data=mode_ABS(emu_line)
-	op_TSB(emu_line,address,data)
+	address=op_TSB(emu_line,address,data)
+	return address+3
 
 def ORA_ABS(emu_line): #0x0D
 	address,data=mode_ABS(emu_line)
-	op_ORA(emu_line,address,data)
+	address=op_ORA(emu_line,address,data)
+	return address+3
 
 def ASL_ABS(emu_line): #0x0E
 	address,data=mode_ABS(emu_line)
-	op_ASL(emu_line,address,data)
+	address=op_ASL(emu_line,address,data)
+	return address+3
 
 def BBR0_ZPR(emu_line): #0x0F
 	address,data=mode_ZPR(emu_line)
-	op_BBR0(emu_line,address,data)
+	address=op_BBR0(emu_line,address,data)
+	return address
 
 def BPL_REL(emu_line): #0x10
 	address,data=mode_REL(emu_line)
-	op_BPL(emu_line,address,data)
+	address=op_BPL(emu_line,address,data)
+	return address
 
 def ORA_IZY(emu_line): #0x11
 	address,data=mode_IZY(emu_line)
-	op_ORA(emu_line,address,data)
+	address=op_ORA(emu_line,address,data)
+	return address+2
 
 def ORA_IZP(emu_line): #0x12
 	address,data=mode_IZP(emu_line)
-	op_ORA(emu_line,address,data)
+	address=op_ORA(emu_line,address,data)
+	return address+2
 
 def TRB_ZP(emu_line): #0x14
 	address,data=mode_ZP(emu_line)
-	op_TRB(emu_line,address,data)
+	address=op_TRB(emu_line,address,data)
+	return address+2
 
 def ORA_ZPX(emu_line): #0x15
 	address,data=mode_ZPX(emu_line)
-	op_ORA(emu_line,address,data)
+	address=op_ORA(emu_line,address,data)
+	return address+2
 
 def ASL_ZPX(emu_line): #0x16
 	address,data=mode_ZPX(emu_line)
-	op_ASL(emu_line,address,data)
+	address=op_ASL(emu_line,address,data)
+	return address+2
 
 def RMB1_ZP(emu_line): #0x17
 	address,data=mode_ZP(emu_line)
-	op_RMB1(emu_line,address,data)
+	address=op_RMB1(emu_line,address,data)
+	return address+2
 
 def CLC_IMP(emu_line): #0x18
-	op_CLC(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_CLC(emu_line,address,data)
+	return address+1
 
 def ORA_ABSY(emu_line): #0x19
 	address,data=mode_ABSY(emu_line)
-	op_ORA(emu_line,address,data)
+	address=op_ORA(emu_line,address,data)
+	return address+3
 
 def INC_IMP(emu_line): #0x1A
-	op_INC(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_INC(emu_line,address,data)
+	return address+1
 
 def TRB_ABS(emu_line): #0x1C
 	address,data=mode_ABS(emu_line)
-	op_TRB(emu_line,address,data)
+	address=op_TRB(emu_line,address,data)
+	return address+3
 
 def ORA_ABSX(emu_line): #0x1D
 	address,data=mode_ABSX(emu_line)
-	op_ORA(emu_line,address,data)
+	address=op_ORA(emu_line,address,data)
+	return address+3
 
 def ASL_ABSX(emu_line): #0x1E
 	address,data=mode_ABSX(emu_line)
-	op_ASL(emu_line,address,data)
+	address=op_ASL(emu_line,address,data)
+	return address+3
 
 def BBR1_ZPR(emu_line): #0x1F
 	address,data=mode_ZPR(emu_line)
-	op_BBR1(emu_line,address,data)
+	address=op_BBR1(emu_line,address,data)
+	return address
 
 def JSR_ABS(emu_line): #0x20
 	address,data=mode_ABS(emu_line)
-	op_JSR(emu_line,address,data)
+	address=op_JSR(emu_line,address,data)
+	return address
 
 def AND_IZX(emu_line): #0x21
 	address,data=mode_IZX(emu_line)
-	op_AND(emu_line,address,data)
+	address=op_AND(emu_line,address,data)
+	return address+2
 
 def BIT_ZP(emu_line): #0x24
 	address,data=mode_ZP(emu_line)
-	op_BIT(emu_line,address,data)
+	address=op_BIT(emu_line,address,data)
+	return address+2
 
 def AND_ZP(emu_line): #0x25
 	address,data=mode_ZP(emu_line)
-	op_AND(emu_line,address,data)
+	address=op_AND(emu_line,address,data)
+	return address+2
 
 def ROL_ZP(emu_line): #0x26
 	address,data=mode_ZP(emu_line)
-	op_ROL(emu_line,address,data)
+	address=op_ROL(emu_line,address,data)
+	return address+2
 
 def RMB2_ZP(emu_line): #0x27
 	address,data=mode_ZP(emu_line)
-	op_RMB2(emu_line,address,data)
+	address=op_RMB2(emu_line,address,data)
+	return address+2
 
 def PLP_IMP(emu_line): #0x28
-	op_PLP(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_PLP(emu_line,address,data)
+	return address+1
 
 def AND_IMMED(emu_line): #0x29
 	address,data=mode_IMMED(emu_line)
-	op_AND(emu_line,address,data)
+	address=op_AND(emu_line,address,data)
+	return address+2
 
 def ROL_IMP(emu_line): #0x2A
-	op_ROL(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_ROL(emu_line,address,data)
+	return address+1
 
 def BIT_ABS(emu_line): #0x2C
 	address,data=mode_ABS(emu_line)
-	op_BIT(emu_line,address,data)
+	address=op_BIT(emu_line,address,data)
+	return address+3
 
 def AND_ABS(emu_line): #0x2D
 	address,data=mode_ABS(emu_line)
-	op_AND(emu_line,address,data)
+	address=op_AND(emu_line,address,data)
+	return address+3
 
 def ROL_ABS(emu_line): #0x2E
 	address,data=mode_ABS(emu_line)
-	op_ROL(emu_line,address,data)
+	address=op_ROL(emu_line,address,data)
+	return address+3
 
 def BBR2_ZPR(emu_line): #0x2F
 	address,data=mode_ZPR(emu_line)
-	op_BBR2(emu_line,address,data)
+	address=op_BBR2(emu_line,address,data)
+	return address
 
 def BMI_REL(emu_line): #0x30
 	address,data=mode_REL(emu_line)
-	op_BMI(emu_line,address,data)
+	address=op_BMI(emu_line,address,data)
+	return address
 
 def AND_IZY(emu_line): #0x31
 	address,data=mode_IZY(emu_line)
-	op_AND(emu_line,address,data)
+	address=op_AND(emu_line,address,data)
+	return address+2
 
 def AND_IZP(emu_line): #0x32
 	address,data=mode_IZP(emu_line)
-	op_AND(emu_line,address,data)
+	address=op_AND(emu_line,address,data)
+	return address+2
 
 def BIT_ZPX(emu_line): #0x34
 	address,data=mode_ZPX(emu_line)
-	op_BIT(emu_line,address,data)
+	address=op_BIT(emu_line,address,data)
+	return address+2
 
 def AND_ZPX(emu_line): #0x35
 	address,data=mode_ZPX(emu_line)
-	op_AND(emu_line,address,data)
+	address=op_AND(emu_line,address,data)
+	return address+2
 
 def ROL_ZPX(emu_line): #0x36
 	address,data=mode_ZPX(emu_line)
-	op_ROL(emu_line,address,data)
+	address=op_ROL(emu_line,address,data)
+	return address+2
 
 def RMB3_ZP(emu_line): #0x37
 	address,data=mode_ZP(emu_line)
-	op_RMB3(emu_line,address,data)
+	address=op_RMB3(emu_line,address,data)
+	return address+2
 
 def SEC_IMP(emu_line): #0x38
-	op_SEC(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_SEC(emu_line,address,data)
+	return address+1
 
 def AND_ABSY(emu_line): #0x39
 	address,data=mode_ABSY(emu_line)
-	op_AND(emu_line,address,data)
+	address=op_AND(emu_line,address,data)
+	return address+3
 
 def DEC_IMP(emu_line): #0x3A
-	op_DEC(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_DEC(emu_line,address,data)
+	return address+1
 
 def BIT_ABSX(emu_line): #0x3C
 	address,data=mode_ABSX(emu_line)
-	op_BIT(emu_line,address,data)
+	address=op_BIT(emu_line,address,data)
+	return address+3
 
 def AND_ABSX(emu_line): #0x3D
 	address,data=mode_ABSX(emu_line)
-	op_AND(emu_line,address,data)
+	address=op_AND(emu_line,address,data)
+	return address+3
 
 def ROL_ABSX(emu_line): #0x3E
 	address,data=mode_ABSX(emu_line)
-	op_ROL(emu_line,address,data)
+	address=op_ROL(emu_line,address,data)
+	return address+3
 
 def BBR3_ZPR(emu_line): #0x3F
 	address,data=mode_ZPR(emu_line)
-	op_BBR3(emu_line,address,data)
+	address=op_BBR3(emu_line,address,data)
+	return address
 
 def RTI_IMP(emu_line): #0x40
-	op_RTI(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_RTI(emu_line,address,data)
+	return address+1
 
 def EOR_IZX(emu_line): #0x41
 	address,data=mode_IZX(emu_line)
-	op_EOR(emu_line,address,data)
+	address=op_EOR(emu_line,address,data)
+	return address+2
 
 def EOR_ZP(emu_line): #0x45
 	address,data=mode_ZP(emu_line)
-	op_EOR(emu_line,address,data)
+	address=op_EOR(emu_line,address,data)
+	return address+2
 
 def LSR_ZP(emu_line): #0x46
 	address,data=mode_ZP(emu_line)
-	op_LSR(emu_line,address,data)
+	address=op_LSR(emu_line,address,data)
+	return address+2
 
 def RMB4_ZP(emu_line): #0x47
 	address,data=mode_ZP(emu_line)
-	op_RMB4(emu_line,address,data)
+	address=op_RMB4(emu_line,address,data)
+	return address+2
 
 def PHA_IMP(emu_line): #0x48
-	op_PHA(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_PHA(emu_line,address,data)
+	return address+1
 
 def EOR_IMMED(emu_line): #0x49
 	address,data=mode_IMMED(emu_line)
-	op_EOR(emu_line,address,data)
+	address=op_EOR(emu_line,address,data)
+	return address+2
 
 def LSR_IMP(emu_line): #0x4A
-	op_LSR(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_LSR(emu_line,address,data)
+	return address+1
 
 def JMP_ABS(emu_line): #0x4C
 	address,data=mode_ABS(emu_line)
-	op_JMP(emu_line,address,data)
+	address=op_JMP(emu_line,address,data)
+	return address
 
 def EOR_ABS(emu_line): #0x4D
 	address,data=mode_ABS(emu_line)
-	op_EOR(emu_line,address,data)
+	address=op_EOR(emu_line,address,data)
+	return address+3
 
 def LSR_ABS(emu_line): #0x4E
 	address,data=mode_ABS(emu_line)
-	op_LSR(emu_line,address,data)
+	address=op_LSR(emu_line,address,data)
+	return address+3
 
 def BBR4_ZPR(emu_line): #0x4F
 	address,data=mode_ZPR(emu_line)
-	op_BBR4(emu_line,address,data)
+	address=op_BBR4(emu_line,address,data)
+	return address
 
 def BVC_REL(emu_line): #0x50
 	address,data=mode_REL(emu_line)
-	op_BVC(emu_line,address,data)
+	address=op_BVC(emu_line,address,data)
+	return address
 
 def EOR_IZY(emu_line): #0x51
 	address,data=mode_IZY(emu_line)
-	op_EOR(emu_line,address,data)
+	address=op_EOR(emu_line,address,data)
+	return address+2
 
 def EOR_IZP(emu_line): #0x52
 	address,data=mode_IZP(emu_line)
-	op_EOR(emu_line,address,data)
+	address=op_EOR(emu_line,address,data)
+	return address+2
 
 def EOR_ZPX(emu_line): #0x55
 	address,data=mode_ZPX(emu_line)
-	op_EOR(emu_line,address,data)
+	address=op_EOR(emu_line,address,data)
+	return address+2
 
 def LSR_ZPX(emu_line): #0x56
 	address,data=mode_ZPX(emu_line)
-	op_LSR(emu_line,address,data)
+	address=op_LSR(emu_line,address,data)
+	return address+2
 
 def RMB5_ZP(emu_line): #0x57
 	address,data=mode_ZP(emu_line)
-	op_RMB5(emu_line,address,data)
+	address=op_RMB5(emu_line,address,data)
+	return address+2
 
 def CLI_IMP(emu_line): #0x58
-	op_CLI(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_CLI(emu_line,address,data)
+	return address+1
 
 def EOR_ABSY(emu_line): #0x59
 	address,data=mode_ABSY(emu_line)
-	op_EOR(emu_line,address,data)
+	address=op_EOR(emu_line,address,data)
+	return address+3
 
 def PHY_IMP(emu_line): #0x5A
-	op_PHY(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_PHY(emu_line,address,data)
+	return address+1
 
 def EOR_ABSX(emu_line): #0x5D
 	address,data=mode_ABSX(emu_line)
-	op_EOR(emu_line,address,data)
+	address=op_EOR(emu_line,address,data)
+	return address+3
 
 def LSR_ABSX(emu_line): #0x5E
 	address,data=mode_ABSX(emu_line)
-	op_LSR(emu_line,address,data)
+	address=op_LSR(emu_line,address,data)
+	return address+3
 
 def BBR5_ZPR(emu_line): #0x5F
 	address,data=mode_ZPR(emu_line)
-	op_BBR5(emu_line,address,data)
+	address=op_BBR5(emu_line,address,data)
+	return address
 
 def RTS_IMP(emu_line): #0x60
-	op_RTS(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_RTS(emu_line,address,data)
+	return address+1
 
 def ADC_IZX(emu_line): #0x61
 	address,data=mode_IZX(emu_line)
-	op_ADC(emu_line,address,data)
+	address=op_ADC(emu_line,address,data)
+	return address+2
 
 def STZ_ZP(emu_line): #0x64
 	address,data=mode_ZP(emu_line)
-	op_STZ(emu_line,address,data)
+	address=op_STZ(emu_line,address,data)
+	return address+2
 
 def ADC_ZP(emu_line): #0x65
 	address,data=mode_ZP(emu_line)
-	op_ADC(emu_line,address,data)
+	address=op_ADC(emu_line,address,data)
+	return address+2
 
 def ROR_ZP(emu_line): #0x66
 	address,data=mode_ZP(emu_line)
-	op_ROR(emu_line,address,data)
+	address=op_ROR(emu_line,address,data)
+	return address+2
 
 def RMB6_ZP(emu_line): #0x67
 	address,data=mode_ZP(emu_line)
-	op_RMB6(emu_line,address,data)
+	address=op_RMB6(emu_line,address,data)
+	return address+2
 
 def PLA_IMP(emu_line): #0x68
-	op_PLA(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_PLA(emu_line,address,data)
+	return address+1
 
 def ADC_IMMED(emu_line): #0x69
 	address,data=mode_IMMED(emu_line)
-	op_ADC(emu_line,address,data)
+	address=op_ADC(emu_line,address,data)
+	return address+2
 
 def ROR_IMP(emu_line): #0x6A
-	op_ROR(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_ROR(emu_line,address,data)
+	return address+1
 
 def JMP_IND(emu_line): #0x6C
 	address,data=mode_IND(emu_line)
-	op_JMP(emu_line,address,data)
+	address=op_JMP(emu_line,address,data)
+	return address
 
 def ADC_ABS(emu_line): #0x6D
 	address,data=mode_ABS(emu_line)
-	op_ADC(emu_line,address,data)
+	address=op_ADC(emu_line,address,data)
+	return address+3
 
 def ROR_ABS(emu_line): #0x6E
 	address,data=mode_ABS(emu_line)
-	op_ROR(emu_line,address,data)
+	address=op_ROR(emu_line,address,data)
+	return address+3
 
 def BBR6_ZPR(emu_line): #0x6F
 	address,data=mode_ZPR(emu_line)
-	op_BBR6(emu_line,address,data)
+	address=op_BBR6(emu_line,address,data)
+	return address
 
 def BVS_REL(emu_line): #0x70
 	address,data=mode_REL(emu_line)
-	op_BVS(emu_line,address,data)
+	address=op_BVS(emu_line,address,data)
+	return address
 
 def ADC_IZY(emu_line): #0x71
 	address,data=mode_IZY(emu_line)
-	op_ADC(emu_line,address,data)
+	address=op_ADC(emu_line,address,data)
+	return address+2
 
 def ADC_IZP(emu_line): #0x72
 	address,data=mode_IZP(emu_line)
-	op_ADC(emu_line,address,data)
+	address=op_ADC(emu_line,address,data)
+	return address+2
 
 def STZ_ZPX(emu_line): #0x74
 	address,data=mode_ZPX(emu_line)
-	op_STZ(emu_line,address,data)
+	address=op_STZ(emu_line,address,data)
+	return address+2
 
 def ADC_ZPX(emu_line): #0x75
 	address,data=mode_ZPX(emu_line)
-	op_ADC(emu_line,address,data)
+	address=op_ADC(emu_line,address,data)
+	return address+2
 
 def ROR_ZPX(emu_line): #0x76
 	address,data=mode_ZPX(emu_line)
-	op_ROR(emu_line,address,data)
+	address=op_ROR(emu_line,address,data)
+	return address+2
 
 def RMB7_ZP(emu_line): #0x77
 	address,data=mode_ZP(emu_line)
-	op_RMB7(emu_line,address,data)
+	address=op_RMB7(emu_line,address,data)
+	return address+2
 
 def SEI_IMP(emu_line): #0x78
-	op_SEI(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_SEI(emu_line,address,data)
+	return address+1
 
 def ADC_ABSY(emu_line): #0x79
 	address,data=mode_ABSY(emu_line)
-	op_ADC(emu_line,address,data)
+	address=op_ADC(emu_line,address,data)
+	return address+3
 
 def PLY_IMP(emu_line): #0x7A
-	op_PLY(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_PLY(emu_line,address,data)
+	return address+1
 
 def JMP_IAX(emu_line): #0x7C
 	address,data=mode_IAX(emu_line)
-	op_JMP(emu_line,address,data)
+	address=op_JMP(emu_line,address,data)
+	return address
 
 def ADC_ABSX(emu_line): #0x7D
 	address,data=mode_ABSX(emu_line)
-	op_ADC(emu_line,address,data)
+	address=op_ADC(emu_line,address,data)
+	return address+3
 
 def ROR_ABSX(emu_line): #0x7E
 	address,data=mode_ABSX(emu_line)
-	op_ROR(emu_line,address,data)
+	address=op_ROR(emu_line,address,data)
+	return address+3
 
 def BBR7_ZPR(emu_line): #0x7F
 	address,data=mode_ZPR(emu_line)
-	op_BBR7(emu_line,address,data)
+	address=op_BBR7(emu_line,address,data)
+	return address
 
 def BRA_REL(emu_line): #0x80
 	address,data=mode_REL(emu_line)
-	op_BRA(emu_line,address,data)
+	address=op_BRA(emu_line,address,data)
+	return address
 
 def STA_IZX(emu_line): #0x81
 	address,data=mode_IZX(emu_line)
-	op_STA(emu_line,address,data)
+	address=op_STA(emu_line,address,data)
+	return address+2
 
 def STY_ZP(emu_line): #0x84
 	address,data=mode_ZP(emu_line)
-	op_STY(emu_line,address,data)
+	address=op_STY(emu_line,address,data)
+	return address+2
 
 def STA_ZP(emu_line): #0x85
 	address,data=mode_ZP(emu_line)
-	op_STA(emu_line,address,data)
+	address=op_STA(emu_line,address,data)
+	return address+2
 
 def STX_ZP(emu_line): #0x86
 	address,data=mode_ZP(emu_line)
-	op_STX(emu_line,address,data)
+	address=op_STX(emu_line,address,data)
+	return address+2
 
 def SMB0_ZP(emu_line): #0x87
 	address,data=mode_ZP(emu_line)
-	op_SMB0(emu_line,address,data)
+	address=op_SMB0(emu_line,address,data)
+	return address+2
 
 def DEY_IMP(emu_line): #0x88
-	op_DEY(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_DEY(emu_line,address,data)
+	return address+1
 
 def BIT_IMMED(emu_line): #0x89
 	address,data=mode_IMMED(emu_line)
-	op_BIT(emu_line,address,data)
+	address=op_BIT(emu_line,address,data)
+	return address+2
 
 def TXA_IMP(emu_line): #0x8A
-	op_TXA(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_TXA(emu_line,address,data)
+	return address+1
 
 def STY_ABS(emu_line): #0x8C
 	address,data=mode_ABS(emu_line)
-	op_STY(emu_line,address,data)
+	address=op_STY(emu_line,address,data)
+	return address+3
 
 def STA_ABS(emu_line): #0x8D
 	address,data=mode_ABS(emu_line)
-	op_STA(emu_line,address,data)
+	address=op_STA(emu_line,address,data)
+	return address+3
 
 def STX_ABS(emu_line): #0x8E
 	address,data=mode_ABS(emu_line)
-	op_STX(emu_line,address,data)
+	address=op_STX(emu_line,address,data)
+	return address+3
 
 def BBS0_ZPR(emu_line): #0x8F
 	address,data=mode_ZPR(emu_line)
-	op_BBS0(emu_line,address,data)
+	address=op_BBS0(emu_line,address,data)
+	return address
 
 def BCC_REL(emu_line): #0x90
 	address,data=mode_REL(emu_line)
-	op_BCC(emu_line,address,data)
+	address=op_BCC(emu_line,address,data)
+	return address
 
 def STA_IZY(emu_line): #0x91
 	address,data=mode_IZY(emu_line)
-	op_STA(emu_line,address,data)
+	address=op_STA(emu_line,address,data)
+	return address+2
 
 def STA_IZP(emu_line): #0x92
 	address,data=mode_IZP(emu_line)
-	op_STA(emu_line,address,data)
+	address=op_STA(emu_line,address,data)
+	return address+2
 
 def STY_ZPX(emu_line): #0x94
 	address,data=mode_ZPX(emu_line)
-	op_STY(emu_line,address,data)
+	address=op_STY(emu_line,address,data)
+	return address+2
 
 def STA_ZPX(emu_line): #0x95
 	address,data=mode_ZPX(emu_line)
-	op_STA(emu_line,address,data)
+	address=op_STA(emu_line,address,data)
+	return address+2
 
 def STX_ZPY(emu_line): #0x96
 	address,data=mode_ZPY(emu_line)
-	op_STX(emu_line,address,data)
+	address=op_STX(emu_line,address,data)
+	return address+2
 
 def SMB1_ZP(emu_line): #0x97
 	address,data=mode_ZP(emu_line)
-	op_SMB1(emu_line,address,data)
+	address=op_SMB1(emu_line,address,data)
+	return address+2
 
 def TYA_IMP(emu_line): #0x98
-	op_TYA(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_TYA(emu_line,address,data)
+	return address+1
 
 def STA_ABSY(emu_line): #0x99
 	address,data=mode_ABSY(emu_line)
-	op_STA(emu_line,address,data)
+	address=op_STA(emu_line,address,data)
+	return address+3
 
 def TXS_IMP(emu_line): #0x9A
-	op_TXS(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_TXS(emu_line,address,data)
+	return address+1
 
 def STZ_ABS(emu_line): #0x9C
 	address,data=mode_ABS(emu_line)
-	op_STZ(emu_line,address,data)
+	address=op_STZ(emu_line,address,data)
+	return address+3
 
 def STA_ABSX(emu_line): #0x9D
 	address,data=mode_ABSX(emu_line)
-	op_STA(emu_line,address,data)
+	address=op_STA(emu_line,address,data)
+	return address+3
 
 def STZ_ABSX(emu_line): #0x9E
 	address,data=mode_ABSX(emu_line)
-	op_STZ(emu_line,address,data)
+	address=op_STZ(emu_line,address,data)
+	return address+3
 
 def BBS1_ZPR(emu_line): #0x9F
 	address,data=mode_ZPR(emu_line)
-	op_BBS1(emu_line,address,data)
+	address=op_BBS1(emu_line,address,data)
+	return address
 
 def LDY_IMMED(emu_line): #0xA0
 	address,data=mode_IMMED(emu_line)
-	op_LDY(emu_line,address,data)
+	address=op_LDY(emu_line,address,data)
+	return address+2
 
 def LDA_IZX(emu_line): #0xA1
 	address,data=mode_IZX(emu_line)
-	op_LDA(emu_line,address,data)
+	address=op_LDA(emu_line,address,data)
+	return address+2
 
 def LDX_IMMED(emu_line): #0xA2
 	address,data=mode_IMMED(emu_line)
-	op_LDX(emu_line,address,data)
+	address=op_LDX(emu_line,address,data)
+	return address+2
 
 def LDY_ZP(emu_line): #0xA4
 	address,data=mode_ZP(emu_line)
-	op_LDY(emu_line,address,data)
+	address=op_LDY(emu_line,address,data)
+	return address+2
 
 def LDA_ZP(emu_line): #0xA5
 	address,data=mode_ZP(emu_line)
-	op_LDA(emu_line,address,data)
+	address=op_LDA(emu_line,address,data)
+	return address+2
 
 def LDX_ZP(emu_line): #0xA6
 	address,data=mode_ZP(emu_line)
-	op_LDX(emu_line,address,data)
+	address=op_LDX(emu_line,address,data)
+	return address+2
 
 def SMB2_ZP(emu_line): #0xA7
 	address,data=mode_ZP(emu_line)
-	op_SMB2(emu_line,address,data)
+	address=op_SMB2(emu_line,address,data)
+	return address+2
 
 def TAY_IMP(emu_line): #0xA8
-	op_TAY(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_TAY(emu_line,address,data)
+	return address+1
 
 def LDA_IMMED(emu_line): #0xA9
 	address,data=mode_IMMED(emu_line)
-	op_LDA(emu_line,address,data)
+	address=op_LDA(emu_line,address,data)
+	return address+2
 
 def TAX_IMP(emu_line): #0xAA
-	op_TAX(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_TAX(emu_line,address,data)
+	return address+1
 
 def LDY_ABS(emu_line): #0xAC
 	address,data=mode_ABS(emu_line)
-	op_LDY(emu_line,address,data)
+	address=op_LDY(emu_line,address,data)
+	return address+3
 
 def LDA_ABS(emu_line): #0xAD
 	address,data=mode_ABS(emu_line)
-	op_LDA(emu_line,address,data)
+	address=op_LDA(emu_line,address,data)
+	return address+3
 
 def LDX_ABS(emu_line): #0xAE
 	address,data=mode_ABS(emu_line)
-	op_LDX(emu_line,address,data)
+	address=op_LDX(emu_line,address,data)
+	return address+3
 
 def BBS2_ZPR(emu_line): #0xAF
 	address,data=mode_ZPR(emu_line)
-	op_BBS2(emu_line,address,data)
+	address=op_BBS2(emu_line,address,data)
+	return address
 
 def BCS_REL(emu_line): #0xB0
 	address,data=mode_REL(emu_line)
-	op_BCS(emu_line,address,data)
+	address=op_BCS(emu_line,address,data)
+	return address
 
 def LDA_IZY(emu_line): #0xB1
 	address,data=mode_IZY(emu_line)
-	op_LDA(emu_line,address,data)
+	address=op_LDA(emu_line,address,data)
+	return address+2
 
 def LDA_IZP(emu_line): #0xB2
 	address,data=mode_IZP(emu_line)
-	op_LDA(emu_line,address,data)
+	address=op_LDA(emu_line,address,data)
+	return address+2
 
 def LDY_ZPX(emu_line): #0xB4
 	address,data=mode_ZPX(emu_line)
-	op_LDY(emu_line,address,data)
+	address=op_LDY(emu_line,address,data)
+	return address+2
 
 def LDA_ZPX(emu_line): #0xB5
 	address,data=mode_ZPX(emu_line)
-	op_LDA(emu_line,address,data)
+	address=op_LDA(emu_line,address,data)
+	return address+2
 
 def LDX_ZPY(emu_line): #0xB6
 	address,data=mode_ZPY(emu_line)
-	op_LDX(emu_line,address,data)
+	address=op_LDX(emu_line,address,data)
+	return address+2
 
 def SMB3_ZP(emu_line): #0xB7
 	address,data=mode_ZP(emu_line)
-	op_SMB3(emu_line,address,data)
+	address=op_SMB3(emu_line,address,data)
+	return address+2
 
 def CLV_IMP(emu_line): #0xB8
-	op_CLV(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_CLV(emu_line,address,data)
+	return address+1
 
 def LDA_ABSY(emu_line): #0xB9
 	address,data=mode_ABSY(emu_line)
-	op_LDA(emu_line,address,data)
+	address=op_LDA(emu_line,address,data)
+	return address+3
 
 def TSX_IMP(emu_line): #0xBA
-	op_TSX(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_TSX(emu_line,address,data)
+	return address+1
 
 def LDY_ABSX(emu_line): #0xBC
 	address,data=mode_ABSX(emu_line)
-	op_LDY(emu_line,address,data)
+	address=op_LDY(emu_line,address,data)
+	return address+3
 
 def LDA_ABSX(emu_line): #0xBD
 	address,data=mode_ABSX(emu_line)
-	op_LDA(emu_line,address,data)
+	address=op_LDA(emu_line,address,data)
+	return address+3
 
 def LDX_ABSY(emu_line): #0xBE
 	address,data=mode_ABSY(emu_line)
-	op_LDX(emu_line,address,data)
+	address=op_LDX(emu_line,address,data)
+	return address+3
 
 def BBS3_ZPR(emu_line): #0xBF
 	address,data=mode_ZPR(emu_line)
-	op_BBS3(emu_line,address,data)
+	address=op_BBS3(emu_line,address,data)
+	return address
 
 def CPY_IMMED(emu_line): #0xC0
 	address,data=mode_IMMED(emu_line)
-	op_CPY(emu_line,address,data)
+	address=op_CPY(emu_line,address,data)
+	return address+2
 
 def CMP_IZX(emu_line): #0xC1
 	address,data=mode_IZX(emu_line)
-	op_CMP(emu_line,address,data)
+	address=op_CMP(emu_line,address,data)
+	return address+2
 
 def CPY_ZP(emu_line): #0xC4
 	address,data=mode_ZP(emu_line)
-	op_CPY(emu_line,address,data)
+	address=op_CPY(emu_line,address,data)
+	return address+2
 
 def CMP_ZP(emu_line): #0xC5
 	address,data=mode_ZP(emu_line)
-	op_CMP(emu_line,address,data)
+	address=op_CMP(emu_line,address,data)
+	return address+2
 
 def DEC_ZP(emu_line): #0xC6
 	address,data=mode_ZP(emu_line)
-	op_DEC(emu_line,address,data)
+	address=op_DEC(emu_line,address,data)
+	return address+2
 
 def SMB4_ZP(emu_line): #0xC7
 	address,data=mode_ZP(emu_line)
-	op_SMB4(emu_line,address,data)
+	address=op_SMB4(emu_line,address,data)
+	return address+2
 
 def INY_IMP(emu_line): #0xC8
-	op_INY(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_INY(emu_line,address,data)
+	return address+1
 
 def CMP_IMMED(emu_line): #0xC9
 	address,data=mode_IMMED(emu_line)
-	op_CMP(emu_line,address,data)
+	address=op_CMP(emu_line,address,data)
+	return address+2
 
 def DEX_IMP(emu_line): #0xCA
-	op_DEX(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_DEX(emu_line,address,data)
+	return address+1
 
 def WAI_IMP(emu_line): #0xCB
-	op_WAI(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_WAI(emu_line,address,data)
+	return address+1
 
 def CPY_ABS(emu_line): #0xCC
 	address,data=mode_ABS(emu_line)
-	op_CPY(emu_line,address,data)
+	address=op_CPY(emu_line,address,data)
+	return address+3
 
 def CMP_ABS(emu_line): #0xCD
 	address,data=mode_ABS(emu_line)
-	op_CMP(emu_line,address,data)
+	address=op_CMP(emu_line,address,data)
+	return address+3
 
 def DEC_ABS(emu_line): #0xCE
 	address,data=mode_ABS(emu_line)
-	op_DEC(emu_line,address,data)
+	address=op_DEC(emu_line,address,data)
+	return address+3
 
 def BBS4_ZPR(emu_line): #0xCF
 	address,data=mode_ZPR(emu_line)
-	op_BBS4(emu_line,address,data)
+	address=op_BBS4(emu_line,address,data)
+	return address
 
 def BNE_REL(emu_line): #0xD0
 	address,data=mode_REL(emu_line)
-	op_BNE(emu_line,address,data)
+	address=op_BNE(emu_line,address,data)
+	return address
 
 def CMP_IZY(emu_line): #0xD1
 	address,data=mode_IZY(emu_line)
-	op_CMP(emu_line,address,data)
+	address=op_CMP(emu_line,address,data)
+	return address+2
 
 def CMP_IZP(emu_line): #0xD2
 	address,data=mode_IZP(emu_line)
-	op_CMP(emu_line,address,data)
+	address=op_CMP(emu_line,address,data)
+	return address+2
 
 def CMP_ZPX(emu_line): #0xD5
 	address,data=mode_ZPX(emu_line)
-	op_CMP(emu_line,address,data)
+	address=op_CMP(emu_line,address,data)
+	return address+2
 
 def DEC_ZPX(emu_line): #0xD6
 	address,data=mode_ZPX(emu_line)
-	op_DEC(emu_line,address,data)
+	address=op_DEC(emu_line,address,data)
+	return address+2
 
 def SMB5_ZP(emu_line): #0xD7
 	address,data=mode_ZP(emu_line)
-	op_SMB5(emu_line,address,data)
+	address=op_SMB5(emu_line,address,data)
+	return address+2
 
 def CLD_IMP(emu_line): #0xD8
-	op_CLD(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_CLD(emu_line,address,data)
+	return address+1
 
 def CMP_ABSY(emu_line): #0xD9
 	address,data=mode_ABSY(emu_line)
-	op_CMP(emu_line,address,data)
+	address=op_CMP(emu_line,address,data)
+	return address+3
 
 def PHX_IMP(emu_line): #0xDA
-	op_PHX(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_PHX(emu_line,address,data)
+	return address+1
 
 def STP_IMP(emu_line): #0xDB
-	op_STP(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_STP(emu_line,address,data)
+	return address+1
 
 def CMP_ABSX(emu_line): #0xDD
 	address,data=mode_ABSX(emu_line)
-	op_CMP(emu_line,address,data)
+	address=op_CMP(emu_line,address,data)
+	return address+3
 
 def DEC_ABSX(emu_line): #0xDE
 	address,data=mode_ABSX(emu_line)
-	op_DEC(emu_line,address,data)
+	address=op_DEC(emu_line,address,data)
+	return address+3
 
 def BBS5_ZPR(emu_line): #0xDF
 	address,data=mode_ZPR(emu_line)
-	op_BBS5(emu_line,address,data)
+	address=op_BBS5(emu_line,address,data)
+	return address
 
 def CPX_IMMED(emu_line): #0xE0
 	address,data=mode_IMMED(emu_line)
-	op_CPX(emu_line,address,data)
+	address=op_CPX(emu_line,address,data)
+	return address+2
 
 def SBC_IZX(emu_line): #0xE1
 	address,data=mode_IZX(emu_line)
-	op_SBC(emu_line,address,data)
+	address=op_SBC(emu_line,address,data)
+	return address+2
 
 def CPX_ZP(emu_line): #0xE4
 	address,data=mode_ZP(emu_line)
-	op_CPX(emu_line,address,data)
+	address=op_CPX(emu_line,address,data)
+	return address+2
 
 def SBC_ZP(emu_line): #0xE5
 	address,data=mode_ZP(emu_line)
-	op_SBC(emu_line,address,data)
+	address=op_SBC(emu_line,address,data)
+	return address+2
 
 def INC_ZP(emu_line): #0xE6
 	address,data=mode_ZP(emu_line)
-	op_INC(emu_line,address,data)
+	address=op_INC(emu_line,address,data)
+	return address+2
 
 def SMB6_ZP(emu_line): #0xE7
 	address,data=mode_ZP(emu_line)
-	op_SMB6(emu_line,address,data)
+	address=op_SMB6(emu_line,address,data)
+	return address+2
 
 def INX_IMP(emu_line): #0xE8
-	op_INX(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_INX(emu_line,address,data)
+	return address+1
 
 def SBC_IMMED(emu_line): #0xE9
 	address,data=mode_IMMED(emu_line)
-	op_SBC(emu_line,address,data)
+	address=op_SBC(emu_line,address,data)
+	return address+2
 
 def NOP_IMP(emu_line): #0xEA
-	op_NOP(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_NOP(emu_line,address,data)
+	return address+1
 
 def CPX_ABS(emu_line): #0xEC
 	address,data=mode_ABS(emu_line)
-	op_CPX(emu_line,address,data)
+	address=op_CPX(emu_line,address,data)
+	return address+3
 
 def SBC_ABS(emu_line): #0xED
 	address,data=mode_ABS(emu_line)
-	op_SBC(emu_line,address,data)
+	address=op_SBC(emu_line,address,data)
+	return address+3
 
 def INC_ABS(emu_line): #0xEE
 	address,data=mode_ABS(emu_line)
-	op_INC(emu_line,address,data)
+	address=op_INC(emu_line,address,data)
+	return address+3
 
 def BBS6_ZPR(emu_line): #0xEF
 	address,data=mode_ZPR(emu_line)
-	op_BBS6(emu_line,address,data)
+	address=op_BBS6(emu_line,address,data)
+	return address
 
 def BEQ_REL(emu_line): #0xF0
 	address,data=mode_REL(emu_line)
-	op_BEQ(emu_line,address,data)
+	address=op_BEQ(emu_line,address,data)
+	return address
 
 def SBC_IZY(emu_line): #0xF1
 	address,data=mode_IZY(emu_line)
-	op_SBC(emu_line,address,data)
+	address=op_SBC(emu_line,address,data)
+	return address+2
 
 def SBC_IZP(emu_line): #0xF2
 	address,data=mode_IZP(emu_line)
-	op_SBC(emu_line,address,data)
+	address=op_SBC(emu_line,address,data)
+	return address+2
 
 def SBC_ZPX(emu_line): #0xF5
 	address,data=mode_ZPX(emu_line)
-	op_SBC(emu_line,address,data)
+	address=op_SBC(emu_line,address,data)
+	return address+2
 
 def INC_ZPX(emu_line): #0xF6
 	address,data=mode_ZPX(emu_line)
-	op_INC(emu_line,address,data)
+	address=op_INC(emu_line,address,data)
+	return address+2
 
 def SMB7_ZP(emu_line): #0xF7
 	address,data=mode_ZP(emu_line)
-	op_SMB7(emu_line,address,data)
+	address=op_SMB7(emu_line,address,data)
+	return address+2
 
 def SED_IMP(emu_line): #0xF8
-	op_SED(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_SED(emu_line,address,data)
+	return address+1
 
 def SBC_ABSY(emu_line): #0xF9
 	address,data=mode_ABSY(emu_line)
-	op_SBC(emu_line,address,data)
+	address=op_SBC(emu_line,address,data)
+	return address+3
 
 def PLX_IMP(emu_line): #0xFA
-	op_PLX(emu_line,address,data)
+	address,data=mode_IMP(emu_line)
+	address=op_PLX(emu_line,address,data)
+	return address+1
 
 def SBC_ABSX(emu_line): #0xFD
 	address,data=mode_ABSX(emu_line)
-	op_SBC(emu_line,address,data)
+	address=op_SBC(emu_line,address,data)
+	return address+3
 
 def INC_ABSX(emu_line): #0xFE
 	address,data=mode_ABSX(emu_line)
-	op_INC(emu_line,address,data)
+	address=op_INC(emu_line,address,data)
+	return address+3
 
 def BBS7_ZPR(emu_line): #0xFF
 	address,data=mode_ZPR(emu_line)
-	op_BBS7(emu_line,address,data)
+	address=op_BBS7(emu_line,address,data)
+	return address
 
 emu_ops=[
     BRK_IMP,        #0x00
@@ -1358,32 +1607,37 @@ COLOR_NAMES={
 
 #Colors for different types of text
 TEXT_COLORS=(
-    ("op",              ("blue","black")),      #Instruction
-    ("dir",             ("magenta","black")),   #Assembly directive
-    ("alpha",           ("white","black")),     #Symbol, ie defined with .SET
-    ("label",           ("yellow","black")),
-    ("label colon",     ("white","black")),
-    ("number",          ("magenta","black")),
-    ("character",       ("green","black")),
-    ("string",          ("green","black")),
-    ("reg",             ("blue","black")),      #X or Y register
-    ("comment",         ("cyan","black")),
-    ("paren selected",  ("white","magenta")),   #Matching parenthesis when cursor on parenthesis
-    ("symbol",          ("white","black")),     #Any symbol #,$,&,etc
-    ("symbol unknown",  ("black","yellow")),    #Unknown alpha symbol like "foo"
-    ("symbol error",    ("white","red")),       #Syntax error like LDA ) or LDA $$
-    ("neutral",         ("white","black")),     #Symbol at end of line - not recognized but don't flag as unknown
-    ("line current",    ("black","green")),     #Highlight address to show current line
-    ("line unknown",    ("black","yellow")),    #Highlight address if contains unknown symbols
-    ("line error",      ("white","red")),       #Highlight address if contains syntax error
-    ("line breakpoint", ("red","white")),       #Highlight address if contains breakpoint
-    ("bytes unknown",   ("yellow","black")),    #Color of ?? in assembled bytes if value unknown
-    ("bytes error",     ("red","black")),       #Color of "Not found" or "Range error" from byte generation
-    ("flag unchanged",  ("cyan","black")),      #Unchanged processor flag
-    ("flag changed",    ("magenta","black")),   #Changed processor flag
-    ("status run",      ("green","black")),
-    ("status rerun",    ("cyan","black")),
-    ("status stopped",  ("black","green")),
+    ("op",                  ("blue","black")),      #Instruction
+    ("dir",                 ("magenta","black")),   #Assembly directive
+    ("alpha",               ("white","black")),     #Symbol, ie defined with .SET
+    ("label",               ("yellow","black")),
+    ("label colon",         ("white","black")),
+    ("number",              ("magenta","black")),
+    ("character",           ("green","black")),
+    ("string",              ("green","black")),
+    ("reg",                 ("blue","black")),      #X or Y register
+    ("comment",             ("cyan","black")),
+    ("paren selected",      ("white","magenta")),   #Matching parenthesis when cursor on parenthesis
+    ("symbol",              ("white","black")),     #Any symbol #,$,&,etc
+    ("symbol unknown",      ("black","yellow")),    #Unknown alpha symbol like "foo"
+    ("symbol error",        ("white","red")),       #Syntax error like LDA ) or LDA $$
+    ("neutral",             ("white","black")),     #Symbol at end of line - not recognized but don't flag as unknown
+    ("line current",        ("black","green")),     #Highlight address to show current line
+    ("line unknown",        ("black","yellow")),    #Highlight address if contains unknown symbols
+    ("line error",          ("white","red")),       #Highlight address if contains syntax error
+    ("line breakpoint",     ("red","white")),       #Highlight address if contains breakpoint
+    ("bytes unknown",       ("yellow","black")),    #Color of ?? in assembled bytes if value unknown
+    ("bytes error",         ("red","black")),       #Color of "Not found" or "Range error" from byte generation
+    ("reg unchanged",       ("white","black")),     #Unchanged register
+    ("reg changed",         ("green","black")),     #Changed register
+    ("reg unknown",         ("yellow","black")),    #Register with unknown value (loaded from uninitialized memory)
+    ("flag unchanged",      ("white","black")),     #Unchanged processor flag
+    ("flag unknown",        ("yellow","black")),    #Unknown processor flag (generated from value from unitialized memory)
+    ("flag changed true",   ("green","black")),     #Changed processor flag that is true
+    ("flag changed false",  ("green","black")),     #Changed processor flag that is false
+    ("status run",          ("green","black")),     #Emulation status of line - has been run
+    ("status rerun",        ("cyan","black")),      #Emulation status of line - has been run more than once
+    ("status stopped",      ("black","green")),     #Emulation status of line - has been run and stopped here
     )
 
 #Maps color types (op, dir, alpha, etc) in TEXT_COLORS to curses color codes in COLOR_NAMES
@@ -1415,8 +1669,33 @@ class ProcessorClass:
         self.I=False
         self.Z=False
         self.C=False
+        #Reset whether flag has been modified
+        self.reset_changed()
         #Whether registers set and ready to print
         self.regs_valid=False 
+    
+    def reset_changed(self):
+        self.A_changed=False
+        self.X_changed=False
+        self.Y_changed=False
+        self.SP_changed=False
+        self.N_changed=False
+        self.V_changed=False
+        self.B_changed=False
+        self.D_changed=False
+        self.I_changed=False
+        self.Z_changed=False
+        self.C_changed=False
+
+    def setNZ(self,data):
+        if data!=-1:
+            self.Z=(data==0)
+            self.N=((data&0x80)==0x80)
+        else:
+            self.Z="?"
+            self.N="?"
+        self.Z_changed=True
+        self.N_changed=True
 
 #Line of assembly text including tokenized form, colored text, assembled bytes etc 
 class LineClass:
@@ -1679,8 +1958,8 @@ class LineClass:
             next_symbol=""
             new_symbol=symbol
             
-            #Don't count space as first symbol
-            if not found_first and symbol!=(" ","symbol"):
+            #Don't count space or comment as first symbol
+            if not found_first and symbol!=(" ","symbol") and symbol_type!="comment":
                 if symbol_type=="label":
                     #Record label but don't count as first symbol
                     first_symbol=False
@@ -1691,8 +1970,8 @@ class LineClass:
             else:
                 first_symbol=False
 
-            #Also, don't count space as second symbol
-            if not first_symbol and found_first and not found_second and symbol!=(" ","symbol"):
+            #Also, don't count space or comment as second symbol
+            if not first_symbol and found_first and not found_second and symbol!=(" ","symbol") and symbol_type!="comment":
                 second_symbol=True
                 found_second=True
                 self.index_second=i
@@ -2630,12 +2909,26 @@ def Execute6502(emu_PC):
     #Copy processor state to next line
     if last_line!=-1:
         matching_line.CPU=deepcopy(program_lines[last_line].CPU)
+        matching_line.CPU.reset_changed()
     #Call function in list corresponding to op code
-    emu_ops[matching_line.bytes[0]](matching_line)
-    last_line=new_index
-    matching_line.execution_status="run" 
+    emu_PC=emu_ops[matching_line.bytes[0]](matching_line)
     matching_line.CPU.regs_valid=True
-    return True,emu_PC+len(matching_line.bytes)
+    if emu_PC==-1:
+        #Catch BRK or other instruction halting execution
+        matching_line.execution_status="stopped" 
+        return False,emu_PC
+    else:    
+        last_line=new_index
+        matching_line.execution_status="run" 
+        return True,emu_PC
+
+#Instruction modes
+#TODO: put in order
+def mode_IMP(emu_line):
+    global emu_mem
+    address=emu_line.address
+    data=0  #dummy value
+    return address,data
 
 def mode_IMMED(emu_line):
     global emu_mem
@@ -2643,17 +2936,79 @@ def mode_IMMED(emu_line):
     data=emu_mem[address]
     return address,data
 
+def mode_ABS(emu_line):
+    global emu_mem
+    address=emu_mem[emu_line.address+1]
+    address+=emu_mem[emu_line.address+2]<<8
+    data=emu_mem[address]
+    return address,data
+
+def mode_ZP(emu_line):
+    global emu_mem
+    address=emu_mem[emu_line.address+1]
+    data=emu_mem[address]
+    return address,data
+    
+#Instructions
+#TODO: put in order
 def op_LDA(emu_line,address,data):
     emu_line.CPU.A=data
-    return
+    emu_line.CPU.A_changed=True
+    emu_line.CPU.setNZ(data)
+    return emu_line.address
 
 def op_LDX(emu_line,address,data):
     emu_line.CPU.X=data
-    return
+    emu_line.CPU.X_changed=True
+    emu_line.CPU.setNZ(data)
+    return emu_line.address
 
 def op_LDY(emu_line,address,data):
     emu_line.CPU.Y=data
-    return
+    emu_line.CPU.Y_changed=True
+    emu_line.CPU.setNZ(data)
+    return emu_line.address
+
+def op_CLC(emu_line,address,data):
+    emu_line.CPU.C=False
+    emu_line.CPU.C_changed=True
+    return emu_line.address
+
+def op_SEC(emu_line,address,data):
+    emu_line.CPU.C=True
+    emu_line.CPU.C_changed=True
+    return emu_line.address
+
+def op_BRK(emu_line,address,data):
+    #Adddress of -1 halts execution
+    return -1
+
+def op_AND(emu_line,address,data):
+    if emu_line.CPU.A==-1 or data==-1:
+        emu_line.CPU.A=-1
+    else:
+        emu_line.CPU.A&=data
+    emu_line.CPU.A_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.A)
+    return emu_line.address
+
+def op_EOR(emu_line,address,data):
+    if emu_line.CPU.A==-1 or data==-1:
+        emu_line.CPU.A=-1
+    else:
+        emu_line.CPU.A^=data
+    emu_line.CPU.A_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.A)
+    return emu_line.address
+
+def op_ORA(emu_line,address,data):
+    if emu_line.CPU.A==-1 or data==-1:
+        emu_line.CPU.A=-1
+    else:
+        emu_line.CPU.A|=data
+    emu_line.CPU.A_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.A)
+    return emu_line.address
 
 #Constants for screen output
 #===========================
@@ -2665,7 +3020,8 @@ STATUS_WIDTH=1
 ADDRESS_WIDTH=7
 BYTES_WIDTH=16
 INPUT_WIDTH=21
-REG_A_WIDTH=7
+REG_A_WIDTH=3
+REG_A_CHAR_WIDTH=4
 REG_X_WIDTH=4
 REG_Y_WIDTH=4
 REG_SP_WIDTH=4+1    #+1 spacing between sections
@@ -2679,7 +3035,8 @@ ADDRESS_X=STATUS_X+STATUS_WIDTH
 BYTES_X=ADDRESS_X+ADDRESS_WIDTH
 INPUT_X=BYTES_X+BYTES_WIDTH
 REG_A_X=INPUT_X+INPUT_WIDTH
-REG_X_X=REG_A_X+REG_A_WIDTH
+REG_A_CHAR_X=REG_A_X+REG_A_WIDTH
+REG_X_X=REG_A_CHAR_X+REG_A_CHAR_WIDTH
 REG_Y_X=REG_X_X+REG_X_WIDTH
 REG_SP_X=REG_Y_X+REG_Y_WIDTH
 FLAGS_X=REG_SP_X+REG_SP_WIDTH
@@ -2797,29 +3154,56 @@ def DrawAssembler(screen):
             text,color=obj
             CursesText(screen,draw_x,draw_y,text,color)
             draw_x+=len(text)
-        
+       
         if line.CPU.regs_valid:
             #Registers
-            reg_A=line.CPU.A
-            if reg_A<32 or (reg_A>=127 and reg_A<=160):
-                reg_A_char=" "
-            else:
-                reg_A_char=chr(reg_A)
-            CursesText(screen,REG_A_X,draw_y,"$"+Hex2(line.CPU.A)+"("+reg_A_char+")")
-            CursesText(screen,REG_X_X,draw_y,"$"+Hex2(line.CPU.X))
-            CursesText(screen,REG_Y_X,draw_y,"$"+Hex2(line.CPU.Y))
-            CursesText(screen,REG_SP_X,draw_y,"$"+Hex2(line.CPU.SP))
-        
+            draw_x=REG_A_X
+            for reg in ["A","X","Y","SP"]:
+                reg_val=getattr(line.CPU,reg)
+                reg_changed=getattr(line.CPU,reg+"_changed")
+                if reg=="A":
+                    if reg_val<32 or (reg_val>=127 and reg_val<=160):
+                        reg_char=" "
+                    else:
+                        reg_char=chr(reg_val)
+                reg_output=Hex2(reg_val) if reg_val!=-1 else "??"
+                if reg_changed: 
+                    reg_color="reg changed" 
+                elif reg_output=="??": 
+                    reg_color="reg unknown" 
+                else:
+                    reg_color="reg unchanged" 
+
+                draw_x=CursesText(screen,draw_x,draw_y,"$"+reg_output,reg_color)  
+                if reg=="A":
+                    draw_x=CursesText(screen,draw_x,draw_y,"("+reg_char+") ",reg_color)  
+                else:
+                    draw_x+=1
+
             #Flags
-            flag_output=""
-            flag_output+="N" if line.CPU.N==1 else "n"
-            flag_output+="V" if line.CPU.V==1 else "v"
-            flag_output+="-B"
-            flag_output+="D" if line.CPU.D==1 else "d"
-            flag_output+="I" if line.CPU.I==1 else "i"
-            flag_output+="Z" if line.CPU.Z==1 else "z"
-            flag_output+="C" if line.CPU.C==1 else "c"
-            CursesText(screen,FLAGS_X,draw_y,flag_output)
+            draw_x=FLAGS_X
+            for flag in "NVBDIZC": 
+                flag_val=getattr(line.CPU,flag)
+                flag_changed=getattr(line.CPU,flag+"_changed")
+                if flag_val=="?":
+                    flag_output="?"
+                elif flag_val==True:
+                    flag_output=flag
+                else:
+                    flag_output=flag.lower()
+
+                if flag_changed:
+                    if flag_val:
+                        flag_color="flag changed true"
+                    elif flag:
+                        flag_color="flag changed false"
+                elif flag_val=="?":
+                    flag_color="flag unknown"
+                else:
+                    flag_color="flag unchanged"
+                draw_x=CursesText(screen,draw_x,draw_y,flag_output,flag_color)
+                if flag=="V":
+                    draw_x=CursesText(screen,draw_x,draw_y,"-",flag_color)
 
 def InteractiveAssembler(screen):
     global label_list
@@ -3079,7 +3463,7 @@ else:
 curses.wrapper(InteractiveAssembler)
 
 #TODO: remove
-DEBUG=True
+DEBUG=False
 if DEBUG:
     with open("debug.txt","wt") as f:
         for i in range(16):

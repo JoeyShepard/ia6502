@@ -288,32 +288,37 @@ COLOR_NAMES={
 
 #Colors for different types of text
 TEXT_COLORS=(
-    ("op",              ("blue","black")),      #Instruction
-    ("dir",             ("magenta","black")),   #Assembly directive
-    ("alpha",           ("white","black")),     #Symbol, ie defined with .SET
-    ("label",           ("yellow","black")),
-    ("label colon",     ("white","black")),
-    ("number",          ("magenta","black")),
-    ("character",       ("green","black")),
-    ("string",          ("green","black")),
-    ("reg",             ("blue","black")),      #X or Y register
-    ("comment",         ("cyan","black")),
-    ("paren selected",  ("white","magenta")),   #Matching parenthesis when cursor on parenthesis
-    ("symbol",          ("white","black")),     #Any symbol #,$,&,etc
-    ("symbol unknown",  ("black","yellow")),    #Unknown alpha symbol like "foo"
-    ("symbol error",    ("white","red")),       #Syntax error like LDA ) or LDA $$
-    ("neutral",         ("white","black")),     #Symbol at end of line - not recognized but don't flag as unknown
-    ("line current",    ("black","green")),     #Highlight address to show current line
-    ("line unknown",    ("black","yellow")),    #Highlight address if contains unknown symbols
-    ("line error",      ("white","red")),       #Highlight address if contains syntax error
-    ("line breakpoint", ("red","white")),       #Highlight address if contains breakpoint
-    ("bytes unknown",   ("yellow","black")),    #Color of ?? in assembled bytes if value unknown
-    ("bytes error",     ("red","black")),       #Color of "Not found" or "Range error" from byte generation
-    ("flag unchanged",  ("cyan","black")),      #Unchanged processor flag
-    ("flag changed",    ("magenta","black")),   #Changed processor flag
-    ("status run",      ("green","black")),
-    ("status rerun",    ("cyan","black")),
-    ("status stopped",  ("black","green")),
+    ("op",                  ("blue","black")),      #Instruction
+    ("dir",                 ("magenta","black")),   #Assembly directive
+    ("alpha",               ("white","black")),     #Symbol, ie defined with .SET
+    ("label",               ("yellow","black")),
+    ("label colon",         ("white","black")),
+    ("number",              ("magenta","black")),
+    ("character",           ("green","black")),
+    ("string",              ("green","black")),
+    ("reg",                 ("blue","black")),      #X or Y register
+    ("comment",             ("cyan","black")),
+    ("paren selected",      ("white","magenta")),   #Matching parenthesis when cursor on parenthesis
+    ("symbol",              ("white","black")),     #Any symbol #,$,&,etc
+    ("symbol unknown",      ("black","yellow")),    #Unknown alpha symbol like "foo"
+    ("symbol error",        ("white","red")),       #Syntax error like LDA ) or LDA $$
+    ("neutral",             ("white","black")),     #Symbol at end of line - not recognized but don't flag as unknown
+    ("line current",        ("black","green")),     #Highlight address to show current line
+    ("line unknown",        ("black","yellow")),    #Highlight address if contains unknown symbols
+    ("line error",          ("white","red")),       #Highlight address if contains syntax error
+    ("line breakpoint",     ("red","white")),       #Highlight address if contains breakpoint
+    ("bytes unknown",       ("yellow","black")),    #Color of ?? in assembled bytes if value unknown
+    ("bytes error",         ("red","black")),       #Color of "Not found" or "Range error" from byte generation
+    ("reg unchanged",       ("white","black")),     #Unchanged register
+    ("reg changed",         ("green","black")),     #Changed register
+    ("reg unknown",         ("yellow","black")),    #Register with unknown value (loaded from uninitialized memory)
+    ("flag unchanged",      ("white","black")),     #Unchanged processor flag
+    ("flag unknown",        ("yellow","black")),    #Unknown processor flag (generated from value from unitialized memory)
+    ("flag changed true",   ("green","black")),     #Changed processor flag that is true
+    ("flag changed false",  ("green","black")),     #Changed processor flag that is false
+    ("status run",          ("green","black")),     #Emulation status of line - has been run
+    ("status rerun",        ("cyan","black")),      #Emulation status of line - has been run more than once
+    ("status stopped",      ("black","green")),     #Emulation status of line - has been run and stopped here
     )
 
 #Maps color types (op, dir, alpha, etc) in TEXT_COLORS to curses color codes in COLOR_NAMES
@@ -345,8 +350,33 @@ class ProcessorClass:
         self.I=False
         self.Z=False
         self.C=False
+        #Reset whether flag has been modified
+        self.reset_changed()
         #Whether registers set and ready to print
         self.regs_valid=False 
+    
+    def reset_changed(self):
+        self.A_changed=False
+        self.X_changed=False
+        self.Y_changed=False
+        self.SP_changed=False
+        self.N_changed=False
+        self.V_changed=False
+        self.B_changed=False
+        self.D_changed=False
+        self.I_changed=False
+        self.Z_changed=False
+        self.C_changed=False
+
+    def setNZ(self,data):
+        if data!=-1:
+            self.Z=(data==0)
+            self.N=((data&0x80)==0x80)
+        else:
+            self.Z="?"
+            self.N="?"
+        self.Z_changed=True
+        self.N_changed=True
 
 #Line of assembly text including tokenized form, colored text, assembled bytes etc 
 class LineClass:
@@ -609,8 +639,8 @@ class LineClass:
             next_symbol=""
             new_symbol=symbol
             
-            #Don't count space as first symbol
-            if not found_first and symbol!=(" ","symbol"):
+            #Don't count space or comment as first symbol
+            if not found_first and symbol!=(" ","symbol") and symbol_type!="comment":
                 if symbol_type=="label":
                     #Record label but don't count as first symbol
                     first_symbol=False
@@ -621,8 +651,8 @@ class LineClass:
             else:
                 first_symbol=False
 
-            #Also, don't count space as second symbol
-            if not first_symbol and found_first and not found_second and symbol!=(" ","symbol"):
+            #Also, don't count space or comment as second symbol
+            if not first_symbol and found_first and not found_second and symbol!=(" ","symbol") and symbol_type!="comment":
                 second_symbol=True
                 found_second=True
                 self.index_second=i
@@ -1560,12 +1590,26 @@ def Execute6502(emu_PC):
     #Copy processor state to next line
     if last_line!=-1:
         matching_line.CPU=deepcopy(program_lines[last_line].CPU)
+        matching_line.CPU.reset_changed()
     #Call function in list corresponding to op code
-    emu_ops[matching_line.bytes[0]](matching_line)
-    last_line=new_index
-    matching_line.execution_status="run" 
+    emu_PC=emu_ops[matching_line.bytes[0]](matching_line)
     matching_line.CPU.regs_valid=True
-    return True,emu_PC+len(matching_line.bytes)
+    if emu_PC==-1:
+        #Catch BRK or other instruction halting execution
+        matching_line.execution_status="stopped" 
+        return False,emu_PC
+    else:    
+        last_line=new_index
+        matching_line.execution_status="run" 
+        return True,emu_PC
+
+#Instruction modes
+#TODO: put in order
+def mode_IMP(emu_line):
+    global emu_mem
+    address=emu_line.address
+    data=0  #dummy value
+    return address,data
 
 def mode_IMMED(emu_line):
     global emu_mem
@@ -1573,17 +1617,79 @@ def mode_IMMED(emu_line):
     data=emu_mem[address]
     return address,data
 
+def mode_ABS(emu_line):
+    global emu_mem
+    address=emu_mem[emu_line.address+1]
+    address+=emu_mem[emu_line.address+2]<<8
+    data=emu_mem[address]
+    return address,data
+
+def mode_ZP(emu_line):
+    global emu_mem
+    address=emu_mem[emu_line.address+1]
+    data=emu_mem[address]
+    return address,data
+    
+#Instructions
+#TODO: put in order
 def op_LDA(emu_line,address,data):
     emu_line.CPU.A=data
-    return
+    emu_line.CPU.A_changed=True
+    emu_line.CPU.setNZ(data)
+    return emu_line.address
 
 def op_LDX(emu_line,address,data):
     emu_line.CPU.X=data
-    return
+    emu_line.CPU.X_changed=True
+    emu_line.CPU.setNZ(data)
+    return emu_line.address
 
 def op_LDY(emu_line,address,data):
     emu_line.CPU.Y=data
-    return
+    emu_line.CPU.Y_changed=True
+    emu_line.CPU.setNZ(data)
+    return emu_line.address
+
+def op_CLC(emu_line,address,data):
+    emu_line.CPU.C=False
+    emu_line.CPU.C_changed=True
+    return emu_line.address
+
+def op_SEC(emu_line,address,data):
+    emu_line.CPU.C=True
+    emu_line.CPU.C_changed=True
+    return emu_line.address
+
+def op_BRK(emu_line,address,data):
+    #Adddress of -1 halts execution
+    return -1
+
+def op_AND(emu_line,address,data):
+    if emu_line.CPU.A==-1 or data==-1:
+        emu_line.CPU.A=-1
+    else:
+        emu_line.CPU.A&=data
+    emu_line.CPU.A_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.A)
+    return emu_line.address
+
+def op_EOR(emu_line,address,data):
+    if emu_line.CPU.A==-1 or data==-1:
+        emu_line.CPU.A=-1
+    else:
+        emu_line.CPU.A^=data
+    emu_line.CPU.A_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.A)
+    return emu_line.address
+
+def op_ORA(emu_line,address,data):
+    if emu_line.CPU.A==-1 or data==-1:
+        emu_line.CPU.A=-1
+    else:
+        emu_line.CPU.A|=data
+    emu_line.CPU.A_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.A)
+    return emu_line.address
 
 #Constants for screen output
 #===========================
@@ -1595,7 +1701,8 @@ STATUS_WIDTH=1
 ADDRESS_WIDTH=7
 BYTES_WIDTH=16
 INPUT_WIDTH=21
-REG_A_WIDTH=7
+REG_A_WIDTH=3
+REG_A_CHAR_WIDTH=4
 REG_X_WIDTH=4
 REG_Y_WIDTH=4
 REG_SP_WIDTH=4+1    #+1 spacing between sections
@@ -1609,7 +1716,8 @@ ADDRESS_X=STATUS_X+STATUS_WIDTH
 BYTES_X=ADDRESS_X+ADDRESS_WIDTH
 INPUT_X=BYTES_X+BYTES_WIDTH
 REG_A_X=INPUT_X+INPUT_WIDTH
-REG_X_X=REG_A_X+REG_A_WIDTH
+REG_A_CHAR_X=REG_A_X+REG_A_WIDTH
+REG_X_X=REG_A_CHAR_X+REG_A_CHAR_WIDTH
 REG_Y_X=REG_X_X+REG_X_WIDTH
 REG_SP_X=REG_Y_X+REG_Y_WIDTH
 FLAGS_X=REG_SP_X+REG_SP_WIDTH
@@ -1727,29 +1835,56 @@ def DrawAssembler(screen):
             text,color=obj
             CursesText(screen,draw_x,draw_y,text,color)
             draw_x+=len(text)
-        
+       
         if line.CPU.regs_valid:
             #Registers
-            reg_A=line.CPU.A
-            if reg_A<32 or (reg_A>=127 and reg_A<=160):
-                reg_A_char=" "
-            else:
-                reg_A_char=chr(reg_A)
-            CursesText(screen,REG_A_X,draw_y,"$"+Hex2(line.CPU.A)+"("+reg_A_char+")")
-            CursesText(screen,REG_X_X,draw_y,"$"+Hex2(line.CPU.X))
-            CursesText(screen,REG_Y_X,draw_y,"$"+Hex2(line.CPU.Y))
-            CursesText(screen,REG_SP_X,draw_y,"$"+Hex2(line.CPU.SP))
-        
+            draw_x=REG_A_X
+            for reg in ["A","X","Y","SP"]:
+                reg_val=getattr(line.CPU,reg)
+                reg_changed=getattr(line.CPU,reg+"_changed")
+                if reg=="A":
+                    if reg_val<32 or (reg_val>=127 and reg_val<=160):
+                        reg_char=" "
+                    else:
+                        reg_char=chr(reg_val)
+                reg_output=Hex2(reg_val) if reg_val!=-1 else "??"
+                if reg_changed: 
+                    reg_color="reg changed" 
+                elif reg_output=="??": 
+                    reg_color="reg unknown" 
+                else:
+                    reg_color="reg unchanged" 
+
+                draw_x=CursesText(screen,draw_x,draw_y,"$"+reg_output,reg_color)  
+                if reg=="A":
+                    draw_x=CursesText(screen,draw_x,draw_y,"("+reg_char+") ",reg_color)  
+                else:
+                    draw_x+=1
+
             #Flags
-            flag_output=""
-            flag_output+="N" if line.CPU.N==1 else "n"
-            flag_output+="V" if line.CPU.V==1 else "v"
-            flag_output+="-B"
-            flag_output+="D" if line.CPU.D==1 else "d"
-            flag_output+="I" if line.CPU.I==1 else "i"
-            flag_output+="Z" if line.CPU.Z==1 else "z"
-            flag_output+="C" if line.CPU.C==1 else "c"
-            CursesText(screen,FLAGS_X,draw_y,flag_output)
+            draw_x=FLAGS_X
+            for flag in "NVBDIZC": 
+                flag_val=getattr(line.CPU,flag)
+                flag_changed=getattr(line.CPU,flag+"_changed")
+                if flag_val=="?":
+                    flag_output="?"
+                elif flag_val==True:
+                    flag_output=flag
+                else:
+                    flag_output=flag.lower()
+
+                if flag_changed:
+                    if flag_val:
+                        flag_color="flag changed true"
+                    elif flag:
+                        flag_color="flag changed false"
+                elif flag_val=="?":
+                    flag_color="flag unknown"
+                else:
+                    flag_color="flag unchanged"
+                draw_x=CursesText(screen,draw_x,draw_y,flag_output,flag_color)
+                if flag=="V":
+                    draw_x=CursesText(screen,draw_x,draw_y,"-",flag_color)
 
 def InteractiveAssembler(screen):
     global label_list
@@ -2009,7 +2144,7 @@ else:
 curses.wrapper(InteractiveAssembler)
 
 #TODO: remove
-DEBUG=True
+DEBUG=False
 if DEBUG:
     with open("debug.txt","wt") as f:
         for i in range(16):

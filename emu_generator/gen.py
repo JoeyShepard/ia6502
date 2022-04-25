@@ -244,11 +244,16 @@ with open("emu_ops.py","wt") as f:
         else:
             name=OP_INFO[i][INDEX_NAME]
             mode=OP_INFO[i][INDEX_MODE]
+            size=OP_INFO[i][INDEX_SIZE]
             output=name+"_"+mode+","
             f.write("def "+name+"_"+mode+"(emu_line): #0x"+Hex2(i)+"\n")
-            if mode not in ["IMP"]:
-                f.write("\taddress,data=mode_"+mode+"(emu_line)\n")
-            f.write("\top_"+name+"(emu_line,address,data)\n")
+            f.write("\taddress,data=mode_"+mode+"(emu_line)\n")
+            f.write("\taddress=op_"+name+"(emu_line,address,data)\n")
+            if mode in ["ZPR","REL"] or name in ["JMP","JSR"]:
+                #Don't add size of instruction to PC
+                f.write("\treturn address\n")
+            else:
+                f.write("\treturn address+"+str(size)+"\n")
             f.write("\n")
 
             mode_set.add(OP_INFO[i][INDEX_MODE])
