@@ -1321,10 +1321,8 @@ emu_ops=[
 
 #TODO: more comments
 #TODO: screen refresh very noticeable
-#TODO: partial effects on flags even if unknown - blank better than ?
 #TODO: limit number of new lines or scroll
 #TODO: breakpoints?
-#TODO: comment in first place
 
 #TODO at end:
 # - Kowalski cant do LDA 3+(4)
@@ -1595,14 +1593,14 @@ DIRECTIVE_LIST=[
 
 #Text colors for curses
 COLOR_NAMES={
-    "blue":curses.COLOR_BLUE,
-    "green":curses.COLOR_GREEN,
-    "cyan":curses.COLOR_CYAN,
-    "yellow":curses.COLOR_YELLOW,
-    "red":curses.COLOR_RED,
-    "magenta":curses.COLOR_MAGENTA,
-    "white":curses.COLOR_WHITE,
-    "black":curses.COLOR_BLACK
+    "blue":     curses.COLOR_BLUE,
+    "green":    curses.COLOR_GREEN,
+    "cyan":     curses.COLOR_CYAN,
+    "yellow":   curses.COLOR_YELLOW,
+    "red":      curses.COLOR_RED,
+    "magenta":  curses.COLOR_MAGENTA,
+    "white":    curses.COLOR_WHITE,
+    "black":    curses.COLOR_BLACK
     }
 
 #Colors for different types of text
@@ -1610,7 +1608,7 @@ TEXT_COLORS=(
     ("op",                  ("blue","black")),      #Instruction
     ("dir",                 ("magenta","black")),   #Assembly directive
     ("alpha",               ("white","black")),     #Symbol, ie defined with .SET
-    ("label",               ("yellow","black")),
+    ("label",               ("green","black")),
     ("label colon",         ("white","black")),
     ("number",              ("magenta","black")),
     ("character",           ("green","black")),
@@ -2934,8 +2932,41 @@ def Execute6502(emu_PC):
         matching_line.execution_status="run" 
         return True,emu_PC
 
+
+#'IZX', 
+#'IND', 
+#'REL', 
+#'IZP', 
+#'ZPR', 
+#'IZY', 
+#'IAX', 
+
+#Done
+#'IMP', 
+#'IMMED', 
+#'ABS', 
+#'ABSX', 
+#'ABSY'
+#'ZP', 
+#'ZPX', 
+#'ZPY', 
+
+
+
 #Instruction modes
 #TODO: put in order
+def FilterAddress(emu_line,byte_count,addition):
+    global emu_mem
+    if addition==-1:
+        return -1
+    address=addition
+    for i in range(byte_count):
+        byte=emu_mem[emu_line.address+i+1]
+        if byte==-1:
+            return -1
+        address+=byte<<(i*8)
+    return address%(0x100**byte_count)
+
 def mode_IMP(emu_line):
     global emu_mem
     address=emu_line.address
@@ -2950,53 +2981,38 @@ def mode_IMMED(emu_line):
 
 def mode_ABS(emu_line):
     global emu_mem
-    address=emu_mem[emu_line.address+1]
-    address+=emu_mem[emu_line.address+2]<<8
-    data=emu_mem[address]
+    address=FilterAddress(emu_line,2,0)
+    data=emu_mem[address] if address!=-1 else -1
     return address,data
 
 def mode_ABSX(emu_line):
     global emu_mem
-    if emu_line.CPU.X==-1:
-        address=-1
-        data=-1
-    else:
-        address=emu_mem[emu_line.address+1]
-        address+=emu_mem[emu_line.address+2]<<8
-        address+=emu_line.CPU.X
-        address%=0x10000
-        data=emu_mem[address]
+    address=FilterAddress(emu_line,2,emu_line.CPU.X)
+    data=emu_mem[address] if address!=-1 else -1
     return address,data
 
 def mode_ABSY(emu_line):
     global emu_mem
-    if emu_line.CPU.Y==-1:
-        address=-1
-        data=-1
-    else:
-        address=emu_mem[emu_line.address+1]
-        address+=emu_mem[emu_line.address+2]<<8
-        address+=emu_line.CPU.Y
-        address%=0x10000
-        data=emu_mem[address]
+    address=FilterAddress(emu_line,2,emu_line.CPU.Y)
+    data=emu_mem[address] if address!=-1 else -1
     return address,data
 
 def mode_ZP(emu_line):
     global emu_mem
-    address=emu_mem[emu_line.address+1]
-    data=emu_mem[address]
+    address=FilterAddress(emu_line,1,0)
+    data=emu_mem[address] if address!=-1 else -1
     return address,data
     
 def mode_ZPX(emu_line):
     global emu_mem
-    if emu_line.CPU.X==-1:
-        address=-1
-        data=-1
-    else:
-        address=emu_mem[emu_line.address+1]
-        address+=emu_line.CPU.X
-        address%=0x100
-        data=emu_mem[address]
+    address=FilterAddress(emu_line,1,emu_line.CPU.X)
+    data=emu_mem[address] if address!=-1 else -1
+    return address,data
+
+def mode_ZPY(emu_line):
+    global emu_mem
+    address=FilterAddress(emu_line,1,emu_line.CPU.Y)
+    data=emu_mem[address] if address!=-1 else -1
     return address,data
 
 #Instructions
@@ -3034,6 +3050,22 @@ def op_STA(emu_line,address,data,mode):
         emu_mem[address]=emu_line.CPU.A
     emu_line.dest_address=address
     emu_line.dest_byte=emu_line.CPU.A
+    return emu_line.address
+
+def op_STX(emu_line,address,data,mode):
+    global emu_mem
+    if address!=-1:
+        emu_mem[address]=emu_line.CPU.X
+    emu_line.dest_address=address
+    emu_line.dest_byte=emu_line.CPU.X
+    return emu_line.address
+
+def op_STY(emu_line,address,data,mode):
+    global emu_mem
+    if address!=-1:
+        emu_mem[address]=emu_line.CPU.Y
+    emu_line.dest_address=address
+    emu_line.dest_byte=emu_line.CPU.Y
     return emu_line.address
 
 def op_CLC(emu_line,address,data,mode):
@@ -3119,7 +3151,7 @@ FLAGS_X=REG_SP_X+REG_SP_WIDTH
 SOURCE_X=FLAGS_X+FLAGS_WIDTH
 DEST_X=SOURCE_X+SOURCE_WIDTH
 #TODO: Add cycles column
-HEADER_TEXT="Program              A      X   Y   SP   Flags     Source     Dest"
+HEADER_TEXT="Program              A      X   Y   SP   Flags     Source     Destination"
 HEADER_X=INPUT_X
 HEADER_Y=0
 
