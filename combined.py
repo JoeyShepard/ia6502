@@ -1656,6 +1656,14 @@ set_symbol_list={}
 #State of emulated 6502 processor
 class ProcessorClass:
     def __init__(self):
+        #Reset registers and flags
+        self.reset_regs()
+        #Reset whether flag has been modified
+        self.reset_changed()
+        #Whether registers set and ready to print
+        self.regs_valid=False 
+    
+    def reset_regs(self):
         #6502 registers
         self.A=0
         self.X=0
@@ -1669,11 +1677,7 @@ class ProcessorClass:
         self.I=False
         self.Z=False
         self.C=False
-        #Reset whether flag has been modified
-        self.reset_changed()
-        #Whether registers set and ready to print
-        self.regs_valid=False 
-    
+
     def reset_changed(self):
         self.A_changed=False
         self.X_changed=False
@@ -2912,6 +2916,10 @@ def Execute6502(emu_PC):
     if last_line!=-1:
         matching_line.CPU=deepcopy(program_lines[last_line].CPU)
         matching_line.CPU.reset_changed()
+    else:
+        #No line to copy from - reset
+        matching_line.CPU.reset_regs()
+        matching_line.CPU.reset_changed()
     #Call function in list corresponding to op code
     emu_PC=emu_ops[matching_line.bytes[0]](matching_line)
     matching_line.CPU.regs_valid=True
@@ -3111,7 +3119,7 @@ LINES_START_Y=1
 #TODO: put somewhere else
 #Emulator constants
 START_ADDRESS=0xC000    #Default start address if no .ORG
-MAX_INSTRUCTIONS=100
+MAX_INSTRUCTIONS=100    #Max instructions to execute to prevent endless loop
 current_address=0
 emu_mem=[]
 emu_addresses={}
@@ -3272,7 +3280,6 @@ def DrawAssembler(screen):
             if line.dest_address!=None:
                 CursesText(screen,draw_x,draw_y,"$"+Hex4(line.dest_address))
 
-
 def InteractiveAssembler(screen):
     global label_list
     global current_address
@@ -3421,7 +3428,7 @@ def InteractiveAssembler(screen):
             #User pressed Ctrl+C - return and exit
             return
         except curses.error:
-            #One second elapsed without key - reassemble and emulate
+            #Timeout expired without keypress - reassemble and emulate
             #(Could be other error but curses doesn't have way to distinguish)
             resimulate=True
             key=""
