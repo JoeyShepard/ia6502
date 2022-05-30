@@ -1337,7 +1337,7 @@ class LineClass:
         "IAX":  (2, ""),
         "IMMED":(1, ""),
         "IMP":  (0, ""),
-        "IND":  (1, ""),
+        "IND":  (2, ""),
         "IZP":  (1, ""),
         "IZX":  (1, ""),
         "IZY":  (1, ""),
@@ -1601,6 +1601,8 @@ def Execute6502(emu_PC):
         #No line to copy from - reset
         matching_line.CPU.reset_regs()
         matching_line.CPU.reset_changed()
+    #Reset aux_address used for instructions with source and dest address
+    aux_address=None
     #Call function in list corresponding to op code
     emu_PC=emu_ops[matching_line.bytes[0]](matching_line)
     matching_line.CPU.regs_valid=True
@@ -1614,9 +1616,6 @@ def Execute6502(emu_PC):
         return True,emu_PC
 
 
-#'IAX', 
-#'IND', 
-#'REL', 
 #'ZPR', 
 
 #Done
@@ -1631,6 +1630,9 @@ def Execute6502(emu_PC):
 #'IZP', 
 #'IZX', 
 #'IZY', 
+#'IAX', 
+#'IND', 
+#'REL', 
 
 
 
@@ -1731,26 +1733,60 @@ def mode_IZY(emu_line):
     data=emu_mem[address] if address!=-1 else -1
     return address,data
 
-def mode_IAX(emu_line):
+def mode_IND(emu_line):
     global emu_mem
-    address=FilterAddress(emu_line,2,emu_line.CPU.X)
-    f=open("debug.txt","wt")
-    f.write(hex(address)+"\n")
+    global aux_address
+    address=FilterAddress(emu_line,2,0)
+    aux_address=address
     if address!=-1:
         address_lo=emu_mem[address]
         address_hi=emu_mem[(address+1)%0x10000]
-        f.write(hex(address_lo)+"\n")
-        f.write(hex(address_hi)+"\n")
         if address_lo==-1 or address_hi==-1:
             address=-1
         else:
             address=address_lo+(address_hi<<8)
-        f.write(hex(address)+"\n")
+    data=0 #dummy value
+    return address,data
+
+def mode_IAX(emu_line):
+    global emu_mem
+    global aux_address
+    address=FilterAddress(emu_line,2,emu_line.CPU.X)
+    aux_address=address
+    if address!=-1:
+        address_lo=emu_mem[address]
+        address_hi=emu_mem[(address+1)%0x10000]
+        if address_lo==-1 or address_hi==-1:
+            address=-1
+        else:
+            address=address_lo+(address_hi<<8)
+    data=0 #dummy value
+    return address,data
+
+def mode_REL(emu_line):
+    address=FilterAddress(emu_line,1,0)
+    if address!=-1:
+        if address<0x80:
+            address=(emu_line.address+address+2)%0x10000
+        else:
+            address=(emu_line.address-(0x100-address)+2)
+            if address<0:
+                address+=0x10000
     data=0 #dummy value
     return address,data
 
 #Instructions
 #TODO: put in order
+
+def RelAddress(emu_line,address,condition):
+    if condition:
+        #Branch taken
+        emu_line.dest_address=address
+        return address
+    else:
+        #Branch not taken
+        return emu_line.address+2
+
 def op_LDA(emu_line,address,data,mode):
     emu_line.CPU.A=data
     emu_line.CPU.A_changed=True
@@ -1861,9 +1897,38 @@ def op_ORA(emu_line,address,data,mode):
     return emu_line.address
 
 def op_JMP(emu_line,address,data,mode):
+    emu_line.source_address=aux_address
     emu_line.dest_address=address
     return address
 
+def op_BRA(emu_line,address,data,mode):
+    emu_line.dest_address=address
+    return address
+
+def op_BCS(emu_line,address,data,mode):
+    return RelAddress(emu_line,address,emu_line.CPU.C)
+
+def op_BCC(emu_line,address,data,mode):
+    return RelAddress(emu_line,address,not emu_line.CPU.C)
+
+def op_BEQ(emu_line,address,data,mode):
+    return RelAddress(emu_line,address,emu_line.CPU.Z)
+
+def op_BNE(emu_line,address,data,mode):
+    return RelAddress(emu_line,address,not emu_line.CPU.Z)
+
+def op_BMI(emu_line,address,data,mode):
+    return RelAddress(emu_line,address,emu_line.CPU.N)
+
+def op_BPL(emu_line,address,data,mode):
+    return RelAddress(emu_line,address,not emu_line.CPU.N)
+
+def op_BVS(emu_line,address,data,mode):
+    return RelAddress(emu_line,address,emu_line.CPU.V)
+
+def op_BVC(emu_line,address,data,mode):
+    return RelAddress(emu_line,address,not emu_line.CPU.V)
+   
 
 #Constants for screen output
 #===========================
@@ -1913,6 +1978,7 @@ emu_mem=[]
 emu_addresses={}
 program_lines=[LineClass()]
 last_line=-1
+aux_address=None
 
 #Screen output functions
 #=======================
@@ -2068,7 +2134,7 @@ def DrawAssembler(screen):
             if line.source_address!=None:
                 source_color="bytes unknown" if line.source_address==-1 else "none"
                 draw_x=CursesText(screen,draw_x,draw_y,"$"+Hex4(line.source_address),source_color)
-                if line.source_address!=-1:
+                if line.source_address!=-1 and line.source_byte!=None:
                     source_color="bytes unknown" if line.source_byte==-1 else "none"
                     CursesText(screen,draw_x,draw_y,":$"+Hex2(line.source_byte),source_color)
             draw_x=DEST_X
