@@ -2933,13 +2933,10 @@ def Execute6502(emu_PC):
         return True,emu_PC
 
 
-#'IZX', 
+#'IAX', 
 #'IND', 
 #'REL', 
-#'IZP', 
 #'ZPR', 
-#'IZY', 
-#'IAX', 
 
 #Done
 #'IMP', 
@@ -2950,6 +2947,9 @@ def Execute6502(emu_PC):
 #'ZP', 
 #'ZPX', 
 #'ZPY', 
+#'IZP', 
+#'IZX', 
+#'IZY', 
 
 
 
@@ -2966,6 +2966,16 @@ def FilterAddress(emu_line,byte_count,addition):
             return -1
         address+=byte<<(i*8)
     return address%(0x100**byte_count)
+
+def FilterZP(address,addition):
+    global emu_mem
+    if address==-1 or addition==-1:
+        return -1
+    address_lo=(address+addition)%0x100
+    address_hi=(address+addition+1)%0x100
+    if emu_mem[address_lo]==-1 or emu_mem[address_hi]==-1:
+        return -1
+    return emu_mem[address_lo]+emu_mem[address_hi]<<8
 
 def mode_IMP(emu_line):
     global emu_mem
@@ -3013,6 +3023,49 @@ def mode_ZPY(emu_line):
     global emu_mem
     address=FilterAddress(emu_line,1,emu_line.CPU.Y)
     data=emu_mem[address] if address!=-1 else -1
+    return address,data
+
+def mode_IZP(emu_line):
+    global emu_mem
+    address=FilterAddress(emu_line,1,0)
+    address=FilterZP(address,0)
+    data=emu_mem[address] if address!=-1 else -1
+    return address,data
+
+def mode_IZX(emu_line):
+    global emu_mem
+    address=FilterAddress(emu_line,1,0)
+    address=FilterZP(address,emu_line.CPU.X)
+    data=emu_mem[address] if address!=-1 else -1
+    return address,data
+
+def mode_IZY(emu_line):
+    global emu_mem
+    if emu_line.CPU.Y==-1:
+        address=-1
+    else:
+        address=FilterAddress(emu_line,1,0)
+        address=FilterZP(address,0)
+        address=(address+emu_line.CPU.Y)%0x10000
+    data=emu_mem[address] if address!=-1 else -1
+    return address,data
+
+def mode_IAX(emu_line):
+    global emu_mem
+    address=FilterAddress(emu_line,2,emu_line.CPU.X)
+    f=open("debug.txt","wt")
+    f.write(hex(address)+"\n")
+    if address!=-1:
+        address_lo=emu_mem[address]
+        address_hi=emu_mem[(address+1)%0x10000]
+        f.write(hex(address_lo)+"\n")
+        f.write(hex(address_hi)+"\n")
+        if address_lo==-1 or address_hi==-1:
+            address=-1
+        else:
+            address=address_lo+(address_hi<<8)
+        f.write(hex(address)+"\n")
+    data=0 #dummy value
     return address,data
 
 #Instructions
@@ -3068,6 +3121,14 @@ def op_STY(emu_line,address,data,mode):
     emu_line.dest_byte=emu_line.CPU.Y
     return emu_line.address
 
+def op_STZ(emu_line,address,data,mode):
+    global emu_mem
+    if address!=-1:
+        emu_mem[address]=0
+    emu_line.dest_address=address
+    emu_line.dest_byte=0
+    return emu_line.address
+
 def op_CLC(emu_line,address,data,mode):
     emu_line.CPU.C=False
     emu_line.CPU.C_changed=True
@@ -3118,6 +3179,11 @@ def op_ORA(emu_line,address,data,mode):
         emu_line.source_byte=data
     return emu_line.address
 
+def op_JMP(emu_line,address,data,mode):
+    emu_line.dest_address=address
+    return address
+
+
 #Constants for screen output
 #===========================
 
@@ -3151,7 +3217,7 @@ FLAGS_X=REG_SP_X+REG_SP_WIDTH
 SOURCE_X=FLAGS_X+FLAGS_WIDTH
 DEST_X=SOURCE_X+SOURCE_WIDTH
 #TODO: Add cycles column
-HEADER_TEXT="Program              A      X   Y   SP   Flags     Source     Destination"
+HEADER_TEXT="Program              A      X   Y   SP   NV-BDIZC  Source     Destination"
 HEADER_X=INPUT_X
 HEADER_Y=0
 
@@ -3328,8 +3394,9 @@ def DrawAssembler(screen):
             if line.dest_address!=None:
                 dest_color="bytes unknown" if line.dest_address==-1 else "none"
                 draw_x=CursesText(screen,draw_x,draw_y,"$"+Hex4(line.dest_address),dest_color)
-                dest_color="bytes unknown" if line.dest_byte==-1 else "none"
-                CursesText(screen,draw_x,draw_y,":$"+Hex2(line.dest_byte),dest_color)
+                if line.dest_byte!=None:
+                    dest_color="bytes unknown" if line.dest_byte==-1 else "none"
+                    CursesText(screen,draw_x,draw_y,":$"+Hex2(line.dest_byte),dest_color)
 
 def InteractiveAssembler(screen):
     global label_list
