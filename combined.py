@@ -2934,27 +2934,6 @@ def Execute6502(emu_PC):
         matching_line.execution_status="run" 
         return True,emu_PC
 
-
-#'ZPR', 
-
-#Done
-#'IMP', 
-#'IMMED', 
-#'ABS', 
-#'ABSX', 
-#'ABSY'
-#'ZP', 
-#'ZPX', 
-#'ZPY', 
-#'IZP', 
-#'IZX', 
-#'IZY', 
-#'IAX', 
-#'IND', 
-#'REL', 
-
-
-
 #Instruction modes
 #TODO: put in order
 def FilterAddress(emu_line,byte_count,addition):
@@ -3093,6 +3072,11 @@ def mode_REL(emu_line):
                 address+=0x10000
     data=0 #dummy value
     return address,data
+
+def mode_ZPR(emu_line):
+    #TODO
+    return -1,-1
+
 
 #Instructions
 #TODO: put in order
@@ -3298,6 +3282,8 @@ emu_addresses={}
 program_lines=[LineClass()]
 last_line=-1
 aux_address=None
+file_input=""
+
 
 #Screen output functions
 #=======================
@@ -3472,7 +3458,8 @@ def InteractiveAssembler(screen):
     global emu_addresses
     global program_lines
     global last_line
-
+    global file_input
+    
     #Initialize color pairs
     global COLOR_DICT
     for i,color in enumerate(TEXT_COLORS):
@@ -3490,7 +3477,7 @@ def InteractiveAssembler(screen):
     redraw_text=True
     last_mode="key"
     while(True):
-        if redraw_text:
+        if redraw_text and not file_input:
             DrawAssembler(screen)
 
             #TODO: change
@@ -3507,12 +3494,17 @@ def InteractiveAssembler(screen):
 
         #Process keys
         try:
-            #Half second timeout for key input
-            curses.halfdelay(5)
+            if file_input:
+                key=file_input[0]
+                file_input=file_input[1:]
+            else:
+                #Half second timeout for key input
+                curses.halfdelay(5)
+                key=screen.getkey()
+                last_mode="key"
+                redraw_text=True
             resimulate=False
-            key=screen.getkey()
-            last_mode="key"
-            redraw_text=True
+
             if key=="KEY_RESIZE":
                 resimulate=True
             elif key=="KEY_BACKSPACE":
@@ -3623,7 +3615,7 @@ def InteractiveAssembler(screen):
             last_mode="timeout"
 
         #Update program line
-        if redraw_text:
+        if redraw_text and not file_input:
             program_lines[current_line].raw_str=input_str
             program_lines[current_line].raw_str_ptr=input_ptr
 
@@ -3705,18 +3697,41 @@ def InteractiveAssembler(screen):
                         if not success:
                             break
 
+#TODO: global variables go here?
+#TODO: check for __main__?
+
 #Check arguments
+error_exit=False
+show_help=False
 if len(argv)==1:
     #No arguments - proceed to interactive mode
     pass
 elif len(argv)==2:
-    #One argument - filename to load
-    #TODO: load file
-    pass
+    #One argument - filename to load or -h
+    if argv[1]=="-h":
+        show_help=True
+        error_exit=True
+    else:
+        try:
+            f=open(argv[1])
+            file_input=f.read()
+            f.close()
+        except:
+            print(f"Unable to open '{argv[1]}'") 
+            show_help=False
+            error_exit=True
 else:
     #More than one argument - error
-    #TODO: argument error
-    pass
+    print("Invalid arguments")
+    show_help=True
+    error_exit=True
+
+#If any errors processing command line or -h, show help message and exit
+#TODO: help message and exit
+if error_exit:
+    if show_help:
+        print("Help message goes here")
+    exit()
 
 #Enter interactive assembler 
 curses.wrapper(InteractiveAssembler)
