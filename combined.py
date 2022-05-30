@@ -2920,8 +2920,6 @@ def Execute6502(emu_PC):
         #No line to copy from - reset
         matching_line.CPU.reset_regs()
         matching_line.CPU.reset_changed()
-    #Reset aux_address used for instructions with source and dest address
-    aux_address=None
     #Call function in list corresponding to op code
     emu_PC=emu_ops[matching_line.bytes[0]](matching_line)
     matching_line.CPU.regs_valid=True
@@ -3033,9 +3031,8 @@ def mode_IZY(emu_line):
 
 def mode_IND(emu_line):
     global emu_mem
-    global aux_address
     address=FilterAddress(emu_line,2,0)
-    aux_address=address
+    emu_line.source_address=address
     if address!=-1:
         address_lo=emu_mem[address]
         address_hi=emu_mem[(address+1)%0x10000]
@@ -3048,9 +3045,8 @@ def mode_IND(emu_line):
 
 def mode_IAX(emu_line):
     global emu_mem
-    global aux_address
     address=FilterAddress(emu_line,2,emu_line.CPU.X)
-    aux_address=address
+    emu_line.source_address=address
     if address!=-1:
         address_lo=emu_mem[address]
         address_hi=emu_mem[(address+1)%0x10000]
@@ -3074,21 +3070,48 @@ def mode_REL(emu_line):
     return address,data
 
 def mode_ZPR(emu_line):
-    #TODO
-    return -1,-1
-
+    global emu_mem
+    address=emu_mem[emu_line.address+2]
+    if address!=-1:
+        if address<0x80:
+            address=(emu_line.address+address+3)%0x10000
+        else:
+            address=(emu_line.address-(0x100-address)+3)
+            if address<0:
+                address+=0x10000
+    data_address=emu_mem[emu_line.address+1]
+    emu_line.source_address=data_address
+    if data_address==-1:
+        data=-1
+    else:
+        data=emu_mem[data_address]
+    emu_line.source_byte=data
+    return address,data
 
 #Instructions
 #TODO: put in order
 
-def RelAddress(emu_line,address,condition):
+def RelAddress(emu_line,address,condition,size=2):
+    if address==-1:
+        return -1
     if condition:
         #Branch taken
         emu_line.dest_address=address
         return address
     else:
         #Branch not taken
-        return emu_line.address+2
+        return emu_line.address+size
+
+def ZprAddress(emu_line,data,address,bit,BBS):
+    if data==-1:
+        address=-1
+    else:
+        if BBS:
+            condition=data&(1<<bit)
+        else:
+            condition=not (data&(1<<bit))
+        address=RelAddress(emu_line,address,condition,size=3)
+    return address
 
 def op_LDA(emu_line,address,data,mode):
     emu_line.CPU.A=data
@@ -3200,13 +3223,14 @@ def op_ORA(emu_line,address,data,mode):
     return emu_line.address
 
 def op_JMP(emu_line,address,data,mode):
-    emu_line.source_address=aux_address
     emu_line.dest_address=address
     return address
 
 def op_BRA(emu_line,address,data,mode):
     emu_line.dest_address=address
     return address
+
+#TODO: flag is -1
 
 def op_BCS(emu_line,address,data,mode):
     return RelAddress(emu_line,address,emu_line.CPU.C)
@@ -3231,7 +3255,56 @@ def op_BVS(emu_line,address,data,mode):
 
 def op_BVC(emu_line,address,data,mode):
     return RelAddress(emu_line,address,not emu_line.CPU.V)
-   
+ 
+def op_BBS0(emu_line,address,data,mode):
+    return ZprAddress(emu_line,data,address,0,True)
+
+def op_BBS1(emu_line,address,data,mode):
+    return ZprAddress(emu_line,data,address,1,True)
+
+def op_BBS2(emu_line,address,data,mode):
+    return ZprAddress(emu_line,data,address,2,True)
+
+def op_BBS3(emu_line,address,data,mode):
+    return ZprAddress(emu_line,data,address,3,True)
+
+def op_BBS4(emu_line,address,data,mode):
+    return ZprAddress(emu_line,data,address,4,True)
+
+def op_BBS5(emu_line,address,data,mode):
+    return ZprAddress(emu_line,data,address,5,True)
+
+def op_BBS6(emu_line,address,data,mode):
+    return ZprAddress(emu_line,data,address,6,True)
+
+def op_BBS7(emu_line,address,data,mode):
+    return ZprAddress(emu_line,data,address,7,True)
+
+def op_BBR0(emu_line,address,data,mode):
+    return ZprAddress(emu_line,data,address,0,False)
+
+def op_BBR1(emu_line,address,data,mode):
+    return ZprAddress(emu_line,data,address,1,False)
+
+def op_BBR2(emu_line,address,data,mode):
+    return ZprAddress(emu_line,data,address,2,False)
+
+def op_BBR3(emu_line,address,data,mode):
+    return ZprAddress(emu_line,data,address,3,False)
+
+def op_BBR4(emu_line,address,data,mode):
+    return ZprAddress(emu_line,data,address,4,False)
+
+def op_BBR5(emu_line,address,data,mode):
+    return ZprAddress(emu_line,data,address,5,False)
+
+def op_BBR6(emu_line,address,data,mode):
+    return ZprAddress(emu_line,data,address,6,False)
+
+def op_BBR7(emu_line,address,data,mode):
+    return ZprAddress(emu_line,data,address,7,False)
+
+
 
 #Constants for screen output
 #===========================
@@ -3281,7 +3354,6 @@ emu_mem=[]
 emu_addresses={}
 program_lines=[LineClass()]
 last_line=-1
-aux_address=None
 file_input=""
 
 
@@ -3750,6 +3822,7 @@ if DEBUG:
                     f.write(Hex2(emu_mem[address+j])+" ")
             f.write("\n")
 
+#Exit message optionally set in InteractiveAssembler
 if exit_msg!="":
     print(exit_msg)
 exit(0)
