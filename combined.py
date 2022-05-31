@@ -3091,6 +3091,50 @@ def mode_ZPR(emu_line):
 #Instructions
 #TODO: put in order
 
+
+"""
+ASL,  
+BIT, 
+CMP, 
+CPX, 
+CPY, 
+DEC, 
+DEX, 
+DEY, 
+INC, 
+INX, 
+INY, 
+JSR, 
+LSR, 
+NOP,  
+PHA, 
+PHP, 
+PHX, 
+PHY, 
+PLA, 
+PLP, 
+PLX, 
+PLY, 
+RMBx, 
+ROL, 
+ROR, 
+RTI, 
+RTS, 
+SBC,  
+SMBx,  
+STP, 
+TAX, 
+TAY, 
+TRB, 
+TSB, 
+TSX, 
+TXA, 
+TXS, 
+TYA, 
+WAI
+"""
+
+
 def RelAddress(emu_line,address,condition,size=2):
     if address==-1:
         return -1
@@ -3112,6 +3156,63 @@ def ZprAddress(emu_line,data,address,bit,BBS):
             condition=not (data&(1<<bit))
         address=RelAddress(emu_line,address,condition,size=3)
     return address
+"""
+def op_AND(emu_line,address,data,mode):
+    if emu_line.CPU.A==-1 or data==-1:
+        emu_line.CPU.A=-1
+    else:
+        emu_line.CPU.A&=data
+    emu_line.CPU.A_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.A)
+    if mode!="IMMED":
+        emu_line.source_address=address
+        emu_line.source_byte=data
+    return emu_line.address
+"""
+
+#TODO: set V
+def op_ADC(emu_line,address,data,mode):
+    if emu_line.CPU.A==-1 or data==-1 or emu_line.CPU.C=="?":
+        emu_line.CPU.A=-1
+        emu_line.CPU.C="?"
+    else:
+        if emu_line.CPU.D:
+            #Decimal mode
+            total=1 if emu_line.CPU.C else 0
+
+            temp=emu_line.CPU.A&0xF
+            total+=min(temp,9)
+            temp=data&0xF
+            total+=min(temp,9)
+            if total>9:
+                total+=6
+
+            temp=emu_line.CPU.A&0xF0
+            total+=min(temp,0x90)
+            temp=data&0xF0
+            total+=min(temp,0x90)
+            if total>0x99:
+                total+=0x60
+
+            temp=total
+        else:
+            #Not decimal mode
+            temp=emu_line.CPU.A+data
+            if emu_line.CPU.C:
+                temp+=1
+        if temp>=0x100:
+            emu_line.CPU.C=True
+            temp-=0x100
+        else:
+            emu_line.CPU.C=False
+        emu_line.CPU.A=temp
+    emu_line.CPU.A_changed=True
+    emu_line.CPU.C_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.A)
+    if mode!="IMMED":
+        emu_line.source_address=address
+        emu_line.source_byte=data
+    return emu_line.address
 
 def op_LDA(emu_line,address,data,mode):
     emu_line.CPU.A=data
@@ -3180,6 +3281,31 @@ def op_CLC(emu_line,address,data,mode):
 def op_SEC(emu_line,address,data,mode):
     emu_line.CPU.C=True
     emu_line.CPU.C_changed=True
+    return emu_line.address
+
+def op_CLD(emu_line,address,data,mode):
+    emu_line.CPU.D=False
+    emu_line.CPU.D_changed=True
+    return emu_line.address
+
+def op_SED(emu_line,address,data,mode):
+    emu_line.CPU.D=True
+    emu_line.CPU.D_changed=True
+    return emu_line.address
+
+def op_CLI(emu_line,address,data,mode):
+    emu_line.CPU.I=False
+    emu_line.CPU.I_changed=True
+    return emu_line.address
+
+def op_SEI(emu_line,address,data,mode):
+    emu_line.CPU.I=True
+    emu_line.CPU.I_changed=True
+    return emu_line.address
+
+def op_CLV(emu_line,address,data,mode):
+    emu_line.CPU.V=False
+    emu_line.CPU.V_changed=True
     return emu_line.address
 
 def op_BRK(emu_line,address,data,mode):
