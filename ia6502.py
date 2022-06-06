@@ -1786,12 +1786,6 @@ CPX,
 CPY, 
 JSR, 
 LSR, 
-NOP,  
-PHA, 
-PHP, 
-PHX, 
-PHY, 
-PLA, 
 PLP, 
 PLX, 
 PLY, 
@@ -1843,6 +1837,19 @@ def PushByte(emu_line,byte):
     emu_line.dest_byte=byte
     emu_line.CPU.SP_changed=True
 
+def PullByte(emu_line):
+    global emu_mem
+    if emu_line.CPU.SP!=-1:
+        emu_line.CPU.SP=0 if emu_line.CPU.SP==255 else emu_line.CPU.SP+1
+        byte=emu_mem[0x100+emu_line.CPU.SP]
+        emu_line.source_address=0x100+emu_line.CPU.SP
+    else:
+        byte=-1
+        emu_line.source_address=-1
+    emu_line.source_byte=byte
+    emu_line.CPU.SP_changed=True
+    return byte
+
 """
 def op_AND(emu_line,address,data,mode):
     if emu_line.CPU.A==-1 or data==-1:
@@ -1857,7 +1864,6 @@ def op_AND(emu_line,address,data,mode):
     return emu_line.address
 """
 
-
 def op_PHA(emu_line,address,data,mode):
     PushByte(emu_line,emu_line.CPU.A)
     return emu_line.address
@@ -1868,6 +1874,29 @@ def op_PHX(emu_line,address,data,mode):
 
 def op_PHY(emu_line,address,data,mode):
     PushByte(emu_line,emu_line.CPU.Y)
+    return emu_line.address
+
+def op_PHP(emu_line,address,data,mode):
+    flags="NV-BDIZC"
+    byte=0
+    mask=0x80
+    for flag in flags:
+        if flag=="-":
+            byte|=mask
+        else:
+            temp_flag=getattr(emu_line.CPU,flag)
+            if temp_flag=="?":
+                byte=-1
+            elif temp_flag:
+                byte|=mask
+        mask>>=1
+    PushByte(emu_line,byte)
+    return emu_line.address
+
+def op_PLA(emu_line,address,data,mode):
+    emu_line.CPU.A=PullByte(emu_line)
+    emu_line.CPU.setNZ(emu_line.CPU.A)
+    emu_line.CPU.A_changed=True
     return emu_line.address
 
 def op_NOP(emu_line,address,data,mode):

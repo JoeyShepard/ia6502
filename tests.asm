@@ -21,3 +21,14 @@ cld
 lda #3
 sta 5
 dec 5
+
+lda #5
+pha
+lda #0
+pha
+lda #$FF
+pha
+lda #5
+pla
+pla
+pla
