@@ -1910,6 +1910,67 @@ def op_ADC(emu_line,address,data,mode):
         emu_line.source_byte=data
     return emu_line.address
 
+def op_SBC(emu_line,address,data,mode):
+    if emu_line.CPU.A==-1 or data==-1 or emu_line.CPU.C=="?":
+        emu_line.CPU.A=-1
+        emu_line.CPU.C="?"
+    else:
+        if emu_line.CPU.D:
+            #TODO
+            #Decimal mode
+            ones=0 if emu_line.CPU.C else -1
+            tens=0
+
+            temp=emu_line.CPU.A&0xF
+            ones+=min(temp,9)
+            temp=data&0xF
+            ones-=min(temp,9)
+            if ones<0:
+                tens-=1
+                ones+=10
+
+            temp=(emu_line.CPU.A&0xF0)>>4
+            tens+=min(temp,9)
+            temp=(data&0xF0)>>4
+            tens-=min(temp,9)
+            if tens<0:
+                emu_line.CPU.C=False
+                tens+=10
+            else:
+                emu_line.CPU.C=True
+
+            temp=tens*0x10+ones
+
+        else:
+            #Not decimal mode
+            temp=emu_line.CPU.A-data
+            if not emu_line.CPU.C:
+                temp-=1
+            #Set C
+            if temp<0:
+                emu_line.CPU.C=False
+                temp+=0x100
+            else:
+                emu_line.CPU.C=True
+        #Set V
+        sign1=emu_line.CPU.A&0x80
+        sign2=data&0x80
+        sign3=temp&0x80
+        if sign1!=sign2 and sign1!=sign3:
+            emu_line.CPU.V=True
+        else:
+            emu_line.CPU.V=False
+        #Set A
+        emu_line.CPU.A=temp
+    emu_line.CPU.A_changed=True
+    emu_line.CPU.C_changed=True
+    emu_line.CPU.V_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.A)
+    if mode!="IMMED":
+        emu_line.source_address=address
+        emu_line.source_byte=data
+    return emu_line.address
+
 def op_LDA(emu_line,address,data,mode):
     emu_line.CPU.A=data
     emu_line.CPU.A_changed=True

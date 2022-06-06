@@ -15,3 +15,15 @@ sed
 clc
 lda #$67
 adc #$34 
+
+sec
+lda #$63
+sbc #$37
+
+clc
+lda #$63
+sbc #$37
+
+clc
+lda #0
+sbc #0
