@@ -1816,9 +1816,13 @@ WAI
 """
 
 
-def RelAddress(emu_line,address,condition,size=2):
+def RelAddress(emu_line,address,condition,size=2,invert=False):
     if address==-1:
         return -1
+    if condition=="?":
+        return -1
+    if invert:
+        condition=not condition
     if condition:
         #Branch taken
         emu_line.dest_address=address
@@ -1852,7 +1856,6 @@ def op_AND(emu_line,address,data,mode):
     return emu_line.address
 """
 
-#TODO: set V
 def op_ADC(emu_line,address,data,mode):
     if emu_line.CPU.A==-1 or data==-1 or emu_line.CPU.C=="?":
         emu_line.CPU.A=-1
@@ -1882,14 +1885,25 @@ def op_ADC(emu_line,address,data,mode):
             temp=emu_line.CPU.A+data
             if emu_line.CPU.C:
                 temp+=1
+        #Set C
         if temp>=0x100:
             emu_line.CPU.C=True
             temp-=0x100
         else:
             emu_line.CPU.C=False
+        #Set V
+        sign1=emu_line.CPU.A&0x80
+        sign2=data&0x80
+        sign3=temp&0x80
+        if sign1==sign2 and sign1!=sign3:
+            emu_line.CPU.V=True
+        else:
+            emu_line.CPU.V=False
+        #Set A
         emu_line.CPU.A=temp
     emu_line.CPU.A_changed=True
     emu_line.CPU.C_changed=True
+    emu_line.CPU.V_changed=True
     emu_line.CPU.setNZ(emu_line.CPU.A)
     if mode!="IMMED":
         emu_line.source_address=address
@@ -2038,31 +2052,29 @@ def op_BRA(emu_line,address,data,mode):
     emu_line.dest_address=address
     return address
 
-#TODO: flag is -1
-
 def op_BCS(emu_line,address,data,mode):
     return RelAddress(emu_line,address,emu_line.CPU.C)
 
 def op_BCC(emu_line,address,data,mode):
-    return RelAddress(emu_line,address,not emu_line.CPU.C)
+    return RelAddress(emu_line,address,emu_line.CPU.C,2,True)
 
 def op_BEQ(emu_line,address,data,mode):
     return RelAddress(emu_line,address,emu_line.CPU.Z)
 
 def op_BNE(emu_line,address,data,mode):
-    return RelAddress(emu_line,address,not emu_line.CPU.Z)
+    return RelAddress(emu_line,address,emu_line.CPU.Z,2,True)
 
 def op_BMI(emu_line,address,data,mode):
     return RelAddress(emu_line,address,emu_line.CPU.N)
 
 def op_BPL(emu_line,address,data,mode):
-    return RelAddress(emu_line,address,not emu_line.CPU.N)
+    return RelAddress(emu_line,address,emu_line.CPU.N,2,True)
 
 def op_BVS(emu_line,address,data,mode):
     return RelAddress(emu_line,address,emu_line.CPU.V)
 
 def op_BVC(emu_line,address,data,mode):
-    return RelAddress(emu_line,address,not emu_line.CPU.V)
+    return RelAddress(emu_line,address,emu_line.CPU.V,2,True)
  
 def op_BBS0(emu_line,address,data,mode):
     return ZprAddress(emu_line,data,address,0,True)
