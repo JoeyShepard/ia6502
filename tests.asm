@@ -2,7 +2,8 @@ lda #$FE
 clc
 adc #1
 
-jmp (table)
+ldx #2
+jmp (table,X)
 table:
 .dw label1
 .dw label2
