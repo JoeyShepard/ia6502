@@ -22,11 +22,10 @@ lda #3
 sta 5
 dec 5
 
-sec
+clc
 lda #2
 sta 7
-lsr
-lsr
-lsr 7
-lsr 7
-
+ror
+ror
+ror
+ror

@@ -1859,6 +1859,82 @@ def op_AND(emu_line,address,data,mode):
     return emu_line.address
 """
 
+def op_ROL(emu_line,address,data,mode):
+    global emu_mem
+    if mode=="IMP":
+        if emu_line.CPU.A!=-1 and emu_line.CPU.C!="?":
+            emu_line.CPU.A<<=1
+            if emu_line.CPU.C:
+                emu_line.CPU.A|=1
+            if emu_line.CPU.A>=0x100:
+                emu_line.CPU.C=True
+                emu_line.CPU.A-=0x100
+            else:
+                emu_line.CPU.C=False
+        else:
+            emu_line.CPU.C="?"
+        emu_line.CPU.A_changed=True
+        emu_line.CPU.setNZ(emu_line.CPU.A)
+    else:
+        if data!=-1 and emu_line.CPU.C!="?":
+            result=data<<1
+            if emu_line.CPU.C:
+                result|=1
+            if result>=0x100:
+                emu_line.CPU.C=True
+                result-=0x100
+            else:
+                emu_line.CPU.C=False
+        else:
+            result=-1
+            emu_line.CPU.C="?"
+        emu_line.CPU.setNZ(result)
+        emu_line.source_address=address
+        emu_line.source_byte=data
+        emu_line.dest_address=address
+        emu_line.dest_byte=result
+        if address!=-1:
+            emu_mem[address]=result
+    emu_line.CPU.C_changed=True
+    return emu_line.address
+
+def op_ROR(emu_line,address,data,mode):
+    global emu_mem
+    if mode=="IMP":
+        if emu_line.CPU.A!=-1 and emu_line.CPU.C!="?":
+            if emu_line.CPU.C:
+                emu_line.CPU.A|=0x100
+            if emu_line.CPU.A&1:
+                emu_line.CPU.C=True
+            else:
+                emu_line.CPU.C=False
+            emu_line.CPU.A>>=1
+        else:
+            emu_line.CPU.C="?"
+        emu_line.CPU.A_changed=True
+        emu_line.CPU.setNZ(emu_line.CPU.A)
+    else:
+        if data!=-1 and emu_line.CPU.C!="?":
+            result=0x100 if emu_line.CPU.C else 0
+            result|=data
+            if data&1:
+                emu_line.CPU.C=True
+            else:
+                emu_line.CPU.C=False
+            result>>=1
+        else:
+            result=-1
+            emu_line.CPU.C="?"
+        emu_line.CPU.setNZ(result)
+        emu_line.source_address=address
+        emu_line.source_byte=data
+        emu_line.dest_address=address
+        emu_line.dest_byte=result
+        if address!=-1:
+            emu_mem[address]=result
+    emu_line.CPU.C_changed=True
+    return emu_line.address
+
 def op_ASL(emu_line,address,data,mode):
     global emu_mem
     if mode=="IMP":
@@ -2646,9 +2722,10 @@ def DrawAssembler(screen):
                 dest_color="bytes unknown" if line.dest_address==-1 else "none"
                 draw_x=CursesText(screen,draw_x,draw_y,"$"+Hex4(line.dest_address),dest_color)
                 if line.dest_byte!=None:
+                    draw_x=CursesText(screen,draw_x,draw_y,":","none")
                     #dest_color="bytes unknown" if line.dest_byte==-1 else "none"
                     dest_color="reg changed"
-                    CursesText(screen,draw_x,draw_y,":$"+Hex2(line.dest_byte),dest_color)
+                    CursesText(screen,draw_x,draw_y,"$"+Hex2(line.dest_byte),dest_color)
 
 def InteractiveAssembler(screen):
     global label_list
