@@ -3098,19 +3098,12 @@ def mode_ZPR(emu_line):
 #TODO: put in order
 
 """
-ASL,
 BIT, 
 CMP, 
 CPX, 
 CPY, 
 JSR, 
 LSR, 
-NOP,  
-PHP, 
-PLA, 
-PLP, 
-PLX, 
-PLY, 
 RMBx, 
 ROL, 
 ROR, 
@@ -3172,7 +3165,6 @@ def PullByte(emu_line):
     emu_line.CPU.SP_changed=True
     return byte
 
-
 """
 def op_AND(emu_line,address,data,mode):
     if emu_line.CPU.A==-1 or data==-1:
@@ -3186,6 +3178,74 @@ def op_AND(emu_line,address,data,mode):
         emu_line.source_byte=data
     return emu_line.address
 """
+
+def op_ASL(emu_line,address,data,mode):
+    global emu_mem
+    if mode=="IMP":
+        if emu_line.CPU.A!=-1:
+            emu_line.CPU.A<<=1
+            if emu_line.CPU.A>=0x100:
+                emu_line.CPU.C=True
+                emu_line.CPU.A-=0x100
+            else:
+                emu_line.CPU.C=False
+        else:
+            emu_line.CPU.C="?"
+        emu_line.CPU.A_changed=True
+        emu_line.CPU.setNZ(emu_line.CPU.A)
+    else:
+        if data!=-1:
+            result=data<<1
+            if result>=0x100:
+                emu_line.CPU.C=True
+                result-=0x100
+            else:
+                emu_line.CPU.C=False
+        else:
+            result=-1
+            emu_line.CPU.C="?"
+        emu_line.CPU.setNZ(result)
+        emu_line.source_address=address
+        emu_line.source_byte=data
+        emu_line.dest_address=address
+        emu_line.dest_byte=result
+        if address!=-1:
+            emu_mem[address]=result
+    emu_line.CPU.C_changed=True
+    return emu_line.address
+
+def op_LSR(emu_line,address,data,mode):
+    global emu_mem
+    if mode=="IMP":
+        if emu_line.CPU.A!=-1:
+            if emu_line.CPU.A&1:
+                emu_line.CPU.C=True
+            else:
+                emu_line.CPU.C=False
+            emu_line.CPU.A>>=1
+        else:
+            emu_line.CPU.C="?"
+        emu_line.CPU.A_changed=True
+        emu_line.CPU.setNZ(emu_line.CPU.A)
+    else:
+        if data!=-1:
+            if data&1:
+                emu_line.CPU.C=True
+            else:
+                emu_line.CPU.C=False
+            result=data>>1
+        else:
+            result=-1
+            emu_line.CPU.C="?"
+        emu_line.CPU.setNZ(result)
+        emu_line.source_address=address
+        emu_line.source_byte=data
+        emu_line.dest_address=address
+        emu_line.dest_byte=result
+        if address!=-1:
+            emu_mem[address]=result
+    emu_line.CPU.C_changed=True
+    return emu_line.address
 
 
 def op_PHA(emu_line,address,data,mode):
@@ -3223,6 +3283,34 @@ def op_PLA(emu_line,address,data,mode):
     emu_line.CPU.A_changed=True
     return emu_line.address
 
+def op_PLX(emu_line,address,data,mode):
+    emu_line.CPU.A=PullByte(emu_line)
+    emu_line.CPU.setNZ(emu_line.CPU.X)
+    emu_line.CPU.X_changed=True
+    return emu_line.address
+
+def op_PLY(emu_line,address,data,mode):
+    emu_line.CPU.A=PullByte(emu_line)
+    emu_line.CPU.setNZ(emu_line.CPU.Y)
+    emu_line.CPU.Y_changed=True
+    return emu_line.address
+
+def op_PLP(emu_line,address,data,mode):
+    flags="NV-BDIZC"
+    mask=0x80
+    byte=emu_line.CPU.A=PullByte(emu_line)
+    for flag in flags:
+        if flag!="-":
+            if byte==-1:
+                setattr(emu_line.CPU,flag,"?")
+            elif byte&mask:
+                setattr(emu_line.CPU,flag,True)
+            else:
+                setattr(emu_line.CPU,flag,False)
+            setattr(emu_line.CPU,flag+"_changed",True)
+        mask>>=1
+    return emu_line.address
+
 def op_NOP(emu_line,address,data,mode):
     return emu_line.address
 
@@ -3232,7 +3320,7 @@ def op_DEC(emu_line,address,data,mode):
         if emu_line.CPU.A!=-1:
             emu_line.CPU.A=255 if emu_line.CPU.A==0 else emu_line.CPU.A-1
         emu_line.CPU.A_changed=True
-        emu_line.CPU.setNZ(emu_line.CPU.X)
+        emu_line.CPU.setNZ(emu_line.CPU.A)
     else:
         if data!=-1:
             result=255 if data==0 else data-1
@@ -3253,7 +3341,7 @@ def op_INC(emu_line,address,data,mode):
         if emu_line.CPU.A!=-1:
             emu_line.CPU.A=0 if emu_line.CPU.A==255 else emu_line.CPU.A+1
         emu_line.CPU.A_changed=True
-        emu_line.CPU.setNZ(emu_line.CPU.X)
+        emu_line.CPU.setNZ(emu_line.CPU.A)
     else:
         if data!=-1:
             result=0 if data==255 else data+1
@@ -3338,7 +3426,7 @@ def op_TXS(emu_line,address,data,mode):
     return emu_line.address
 
 def op_ADC(emu_line,address,data,mode):
-    if emu_line.CPU.A==-1 or data==-1 or emu_line.CPU.C=="?":
+    if emu_line.CPU.A==-1 or data==-1 or emu_line.CPU.C=="?" or emu_line.CPU.D=="?":
         emu_line.CPU.A=-1
         emu_line.CPU.C="?"
     else:
@@ -3392,7 +3480,7 @@ def op_ADC(emu_line,address,data,mode):
     return emu_line.address
 
 def op_SBC(emu_line,address,data,mode):
-    if emu_line.CPU.A==-1 or data==-1 or emu_line.CPU.C=="?":
+    if emu_line.CPU.A==-1 or data==-1 or emu_line.CPU.C=="?" or emu_line.CPU.D=="?":
         emu_line.CPU.A=-1
         emu_line.CPU.C="?"
     else:
