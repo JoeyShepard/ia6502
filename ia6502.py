@@ -1779,12 +1779,6 @@ BIT,
 CMP, 
 CPX, 
 CPY, 
-DEC, 
-DEX, 
-DEY, 
-INC, 
-INX, 
-INY, 
 JSR, 
 LSR, 
 NOP,  
@@ -1801,18 +1795,9 @@ ROL,
 ROR, 
 RTI, 
 RTS, 
-SBC,  
 SMBx,  
-STP, 
-TAX, 
-TAY, 
 TRB, 
 TSB, 
-TSX, 
-TXA, 
-TXS, 
-TYA, 
-WAI
 """
 
 
@@ -1855,6 +1840,120 @@ def op_AND(emu_line,address,data,mode):
         emu_line.source_byte=data
     return emu_line.address
 """
+
+def op_NOP(emu_line,address,data,mode):
+    return emu_line.address
+
+def op_DEC(emu_line,address,data,mode):
+    global emu_mem
+    if mode=="IMP":
+        if emu_line.CPU.A!=-1:
+            emu_line.CPU.A=255 if emu_line.CPU.A==0 else emu_line.CPU.A-1
+        emu_line.CPU.A_changed=True
+        emu_line.CPU.setNZ(emu_line.CPU.X)
+    else:
+        if data!=-1:
+            result=255 if data==0 else data-1
+        else:
+            result=-1
+        emu_line.CPU.setNZ(result)
+        emu_line.source_address=address
+        emu_line.source_byte=data
+        emu_line.dest_address=address
+        emu_line.dest_byte=result
+        if address!=-1:
+            emu_mem[address]=result
+    return emu_line.address
+
+def op_INC(emu_line,address,data,mode):
+    global emu_mem
+    if mode=="IMP":
+        if emu_line.CPU.A!=-1:
+            emu_line.CPU.A=0 if emu_line.CPU.A==255 else emu_line.CPU.A+1
+        emu_line.CPU.A_changed=True
+        emu_line.CPU.setNZ(emu_line.CPU.X)
+    else:
+        if data!=-1:
+            result=0 if data==255 else data+1
+        else:
+            result=-1
+        emu_line.CPU.setNZ(result)
+        emu_line.source_address=address
+        emu_line.source_byte=data
+        emu_line.dest_address=address
+        emu_line.dest_byte=result
+        if address!=-1:
+            emu_mem[address]=result
+    return emu_line.address
+
+def op_DEX(emu_line,address,data,mode):
+    if emu_line.CPU.X!=-1:
+        emu_line.CPU.X=255 if emu_line.CPU.X==0 else emu_line.CPU.X-1
+    emu_line.CPU.X_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.X)
+    return emu_line.address
+
+def op_INX(emu_line,address,data,mode):
+    if emu_line.CPU.X!=-1:
+        emu_line.CPU.X=0 if emu_line.CPU.X==255 else emu_line.CPU.X+1
+    emu_line.CPU.X_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.X)
+    return emu_line.address
+
+def op_DEY(emu_line,address,data,mode):
+    if emu_line.CPU.Y!=-1:
+        emu_line.CPU.Y=255 if emu_line.CPU.Y==0 else emu_line.CPU.Y-1
+    emu_line.CPU.Y_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.Y)
+    return emu_line.address
+
+def op_INY(emu_line,address,data,mode):
+    if emu_line.CPU.Y!=-1:
+        emu_line.CPU.Y=0 if emu_line.CPU.Y==255 else emu_line.CPU.Y+1
+    emu_line.CPU.Y_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.Y)
+    return emu_line.address
+
+def op_STP(emu_line,address,data,mode):
+    return -1
+
+def op_WAI(emu_line,address,data,mode):
+    return -1
+
+def op_TAX(emu_line,address,data,mode):
+    emu_line.CPU.X=emu_line.CPU.A
+    emu_line.CPU.X_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.X)
+    return emu_line.address
+
+def op_TAY(emu_line,address,data,mode):
+    emu_line.CPU.Y=emu_line.CPU.A
+    emu_line.CPU.Y_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.Y)
+    return emu_line.address
+
+def op_TXA(emu_line,address,data,mode):
+    emu_line.CPU.A=emu_line.CPU.X
+    emu_line.CPU.A_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.A)
+    return emu_line.address
+
+def op_TYA(emu_line,address,data,mode):
+    emu_line.CPU.A=emu_line.CPU.Y
+    emu_line.CPU.A_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.A)
+    return emu_line.address
+
+def op_TSX(emu_line,address,data,mode):
+    emu_line.CPU.X=emu_line.CPU.SP
+    emu_line.CPU.X_changed=True
+    emu_line.CPU.setNZ(emu_line.CPU.X)
+    return emu_line.address
+
+def op_TXS(emu_line,address,data,mode):
+    emu_line.CPU.SP=emu_line.CPU.X
+    emu_line.CPU.SP_changed=True
+    return emu_line.address
 
 def op_ADC(emu_line,address,data,mode):
     if emu_line.CPU.A==-1 or data==-1 or emu_line.CPU.C=="?":
@@ -1916,7 +2015,6 @@ def op_SBC(emu_line,address,data,mode):
         emu_line.CPU.C="?"
     else:
         if emu_line.CPU.D:
-            #TODO
             #Decimal mode
             ones=0 if emu_line.CPU.C else -1
             tens=0
@@ -2400,7 +2498,8 @@ def DrawAssembler(screen):
                 dest_color="bytes unknown" if line.dest_address==-1 else "none"
                 draw_x=CursesText(screen,draw_x,draw_y,"$"+Hex4(line.dest_address),dest_color)
                 if line.dest_byte!=None:
-                    dest_color="bytes unknown" if line.dest_byte==-1 else "none"
+                    #dest_color="bytes unknown" if line.dest_byte==-1 else "none"
+                    dest_color="reg changed"
                     CursesText(screen,draw_x,draw_y,":$"+Hex2(line.dest_byte),dest_color)
 
 def InteractiveAssembler(screen):

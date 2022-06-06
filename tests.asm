@@ -14,16 +14,9 @@ lda #7
 sed
 clc
 lda #$67
-adc #$34 
+adc #$34
+cld
 
-sec
-lda #$63
-sbc #$37
-
-clc
-lda #$63
-sbc #$37
-
-clc
-lda #0
-sbc #0
+lda #3
+sta 5
+dec 5
