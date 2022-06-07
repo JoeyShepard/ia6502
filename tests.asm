@@ -18,14 +18,14 @@ lda #$67
 adc #$34
 cld
 
-lda #3
+lda #$FF
 sta 5
-dec 5
+smb0 5
+smb1 5
+smb2 5
+smb3 5
+smb4 5
+smb5 5
+smb6 5
+smb7 5
 
-clc
-lda #2
-sta 7
-ror
-ror
-ror
-ror

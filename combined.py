@@ -3098,16 +3098,7 @@ def mode_ZPR(emu_line):
 #TODO: put in order
 
 """
-BIT, 
-CMP, 
-CPX, 
-CPY, 
-JSR, 
 RMBx, 
-ROL, 
-ROR, 
-RTI, 
-RTS, 
 SMBx,  
 TRB, 
 TSB, 
@@ -3164,19 +3155,97 @@ def PullByte(emu_line):
     emu_line.CPU.SP_changed=True
     return byte
 
-"""
-def op_AND(emu_line,address,data,mode):
-    if emu_line.CPU.A==-1 or data==-1:
-        emu_line.CPU.A=-1
+def Compare(emu_line,data,cmp_val):
+    if cmp_val==-1 or data==-1:
+        emu_line.CPU.C="?"
+        emu_line.CPU.N="?"
+        emu_line.CPU.Z="?"
     else:
-        emu_line.CPU.A&=data
-    emu_line.CPU.A_changed=True
-    emu_line.CPU.setNZ(emu_line.CPU.A)
+        emu_line.CPU.C=(cmp_val>=data)
+        temp=(cmp_val+0x100-data)&0xFF
+        emu_line.CPU.N=((temp&0x80)==0x80)
+        emu_line.CPU.Z=(cmp_val==data)
+    emu_line.CPU.C_changed=True
+    emu_line.CPU.N_changed=True
+    emu_line.CPU.Z_changed=True
+
+def RMB(emu_line,address,data,bit):
+    global emu_mem
+    if data!=-1 and address!=-1:
+        result=data&~(1<<bit)
+        emu_mem[address]=result
+    else:
+        result=-1
+    emu_line.source_address=address
+    emu_line.source_byte=data
+    emu_line.dest_address=address
+    emu_line.dest_byte=result
+
+def SMB(emu_line,address,data,bit):
+    global emu_mem
+    if data!=-1 and address!=-1:
+        result=data|(1<<bit)
+        emu_mem[address]=result
+    else:
+        result=-1
+    emu_line.source_address=address
+    emu_line.source_byte=data
+    emu_line.dest_address=address
+    emu_line.dest_byte=result
+
+def op_BIT(emu_line,address,data,mode):
+    if emu_line.CPU.A==-1 or data==-1:
+        emu_line.CPU.Z="?"
+    else:
+        emu_line.CPU.Z=(emu_line.CPU.A&data)==0
+    emu_line.CPU.Z_changed=True
     if mode!="IMMED":
+        if emu_line.CPU.A==-1 or data==-1:
+            emu_line.CPU.N="?"
+            emu_line.CPU.V="?"
+        else:
+            emu_line.CPU.N=(data&0x80)==0x80
+            emu_line.CPU.V=(data&0x40)==0x40
+        emu_line.CPU.N_changed=True
+        emu_line.CPU.V_changed=True
         emu_line.source_address=address
         emu_line.source_byte=data
     return emu_line.address
-"""
+
+def op_JSR(emu_line,address,data,mode):
+    address_lo=(emu_line.address+2)&0xFF
+    address_hi=(emu_line.address+2)>>8
+    PushByte(emu_line,address_hi)
+    PushByte(emu_line,address_lo)
+    emu_line.source_address=None
+    emu_line.dest_address=address
+    emu_line.dest_byte=None
+    return address
+
+def op_RTS(emu_line,address,data,mode):
+    address_lo=PullByte(emu_line)
+    address_hi=PullByte(emu_line)
+    if address_lo==-1 or address_hi==-1:
+        return -1
+    ret_address=(address_lo+(address_hi<<8)+1)&0xFFFF
+    emu_line.dest_address=ret_address
+    return ret_address
+
+def op_CMP(emu_line,address,data,mode):
+    Compare(emu_line,data,emu_line.CPU.A)
+    return emu_line.address
+
+def op_CPX(emu_line,address,data,mode):
+    Compare(emu_line,data,emu_line.CPU.X)
+    return emu_line.address
+
+def op_CPY(emu_line,address,data,mode):
+    Compare(emu_line,data,emu_line.CPU.Y)
+    return emu_line.address
+
+def op_RTI(emu_line,address,data,mode):
+    #Interrupts not implemented - halt
+    return -1
 
 def op_ROL(emu_line,address,data,mode):
     global emu_mem
@@ -3827,6 +3896,69 @@ def op_BBR6(emu_line,address,data,mode):
 def op_BBR7(emu_line,address,data,mode):
     return ZprAddress(emu_line,data,address,7,False)
 
+def op_RMB0(emu_line,address,data,mode):
+    RMB(emu_line,address,data,0)
+    return emu_line.address
+
+def op_RMB1(emu_line,address,data,mode):
+    RMB(emu_line,address,data,1)
+    return emu_line.address
+
+def op_RMB2(emu_line,address,data,mode):
+    RMB(emu_line,address,data,2)
+    return emu_line.address
+
+def op_RMB3(emu_line,address,data,mode):
+    RMB(emu_line,address,data,3)
+    return emu_line.address
+
+def op_RMB4(emu_line,address,data,mode):
+    RMB(emu_line,address,data,4)
+    return emu_line.address
+
+def op_RMB5(emu_line,address,data,mode):
+    RMB(emu_line,address,data,5)
+    return emu_line.address
+
+def op_RMB6(emu_line,address,data,mode):
+    RMB(emu_line,address,data,6)
+    return emu_line.address
+
+def op_RMB7(emu_line,address,data,mode):
+    RMB(emu_line,address,data,7)
+    return emu_line.address
+
+def op_SMB0(emu_line,address,data,mode):
+    SMB(emu_line,address,data,0)
+    return emu_line.address
+
+def op_SMB1(emu_line,address,data,mode):
+    SMB(emu_line,address,data,1)
+    return emu_line.address
+
+def op_SMB2(emu_line,address,data,mode):
+    SMB(emu_line,address,data,2)
+    return emu_line.address
+
+def op_SMB3(emu_line,address,data,mode):
+    SMB(emu_line,address,data,3)
+    return emu_line.address
+
+def op_SMB4(emu_line,address,data,mode):
+    SMB(emu_line,address,data,4)
+    return emu_line.address
+
+def op_SMB5(emu_line,address,data,mode):
+    SMB(emu_line,address,data,5)
+    return emu_line.address
+
+def op_SMB6(emu_line,address,data,mode):
+    SMB(emu_line,address,data,6)
+    return emu_line.address
+
+def op_SMB7(emu_line,address,data,mode):
+    SMB(emu_line,address,data,7)
+    return emu_line.address
 
 
 #Constants for screen output
