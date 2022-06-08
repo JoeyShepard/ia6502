@@ -3098,8 +3098,6 @@ def mode_ZPR(emu_line):
 #TODO: put in order
 
 """
-RMBx, 
-SMBx,  
 TRB, 
 TSB, 
 """
@@ -3192,6 +3190,43 @@ def SMB(emu_line,address,data,bit):
     emu_line.source_byte=data
     emu_line.dest_address=address
     emu_line.dest_byte=result
+
+def op_TRB(emu_line,address,data,mode):
+    global emu_mem
+    if emu_line.CPU.A==-1 or data==-1:
+        emu_line.CPU.Z="?"
+        result=-1
+    else:
+        emu_line.CPU.Z=(emu_line.CPU.A&data)==0
+        result=data&(emu_line.CPU.A^0xFF)
+        if address!=-1:
+            emu_mem[address]=result
+    emu_line.CPU.Z_changed=True
+    emu_line.CPU.A_changed=True
+    emu_line.source_address=address
+    emu_line.source_byte=data
+    emu_line.dest_address=address
+    emu_line.dest_byte=result
+    return emu_line.address
+
+def op_TSB(emu_line,address,data,mode):
+    global emu_mem
+    if emu_line.CPU.A==-1 or data==-1:
+        emu_line.CPU.Z="?"
+        result=-1
+    else:
+        emu_line.CPU.Z=(emu_line.CPU.A&data)==0
+        result=data|emu_line.CPU.A
+        if address!=-1:
+            emu_mem[address]=result
+    emu_line.CPU.Z_changed=True
+    emu_line.CPU.A_changed=True
+    emu_line.source_address=address
+    emu_line.source_byte=data
+    emu_line.dest_address=address
+    emu_line.dest_byte=result
+    return emu_line.address
+
 
 def op_BIT(emu_line,address,data,mode):
     if emu_line.CPU.A==-1 or data==-1:
