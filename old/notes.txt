@@ -1,0 +1,3 @@
+Old setup - run.sh copies emu_ops.py then ia6502.py into one combined file.
+This was necessary since Python doesn't allow a function called by another function to be defined later
+in another file. Now that all functions for instructions are defined, no longer necessary to do it like this.

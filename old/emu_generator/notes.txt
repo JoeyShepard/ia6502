@@ -1,0 +1,1 @@
+uses table of information about 6502 instructions to create Python functions for instruction jump table in emulator
