@@ -18,7 +18,6 @@ lda #$67
 adc #$34
 cld
 
-
 lda #5
 sta 7
 lda #2
