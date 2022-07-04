@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 
-import curses
-from ia6502.classes import EditorStateClass
-
 #Text colors for curses
 COLOR_NAMES={
-    "blue":     curses.COLOR_BLUE,
-    "green":    curses.COLOR_GREEN,
-    "cyan":     curses.COLOR_CYAN,
-    "yellow":   curses.COLOR_YELLOW,
-    "red":      curses.COLOR_RED,
-    "magenta":  curses.COLOR_MAGENTA,
-    "white":    curses.COLOR_WHITE,
-    "black":    curses.COLOR_BLACK
+    "blue":     0xFF,       #curses.COLOR_BLUE,
+    "green":    0xFF00,     #curses.COLOR_GREEN,
+    "cyan":     0xFFFF,     #curses.COLOR_CYAN,
+    "yellow":   0xFFFF00,   #curses.COLOR_YELLOW,
+    "red":      0xFF0000,   #curses.COLOR_RED,
+    "magenta":  0xFF00FF,   #curses.COLOR_MAGENTA,
+    "white":    0xFFFFFF,   #curses.COLOR_WHITE,
+    "black":    0,          #curses.COLOR_BLACK
     }
 
 #Colors for different types of text
@@ -58,99 +55,81 @@ COLOR_DICT={}
 #=======================
 def InitColors():
     for i,color in enumerate(TEXT_COLORS):
-        curses.init_pair(i+1,COLOR_NAMES[color[1][0]],COLOR_NAMES[color[1][1]])
-        COLOR_DICT[color[0]]=curses.color_pair(i+1)
-    COLOR_DICT["none"]=curses.color_pair(0)
+        #curses.init_pair(i+1,COLOR_NAMES[color[1][0]],COLOR_NAMES[color[1][1]])
+        #COLOR_DICT[color[0]]=curses.color_pair(i+1)
+        pass
+    #COLOR_DICT["none"]=curses.color_pair(0)
 
 def ClearScreen(screen):
-    screen.clear()
+    jc.clearScreen()
+    return
 
 def DrawText(draw_x,draw_y,text,screen,color="none"):
-    screen.addstr(draw_y,draw_x,text,COLOR_DICT[color])
+    #screen.addstr(draw_y,draw_x,text,COLOR_DICT[color])
+    jc.drawString(draw_x,draw_y,text)
     return draw_x+len(text)
 
 #Place cursor on input line
 def ReturnCursor(x,y,screen):
-    screen.move(y,x)
-    
+    #screen.move(y,x)
+    return
+
 def EndDrawing(screen):
-    screen.refresh()
+    jc.drawScreen()
+    return
 
 #Key input
 #=========
 
 #Shows key names and values - debug only
 def GetKeyNames(screen):
-    screen.addstr(1,1,"Key: ")
-    while(True):
-        key=screen.getkey()
-        screen.clear()
-        screen.addstr(1,1,"Key: "+key+"("+str(len(key))+")"+" - "+str(ord(key)) if len(key)==1 else "")
-        screen.refresh()
+    #screen.addstr(1,1,"Key: ")
+    #while(True):
+    #    key=screen.getkey()
+    #    screen.clear()
+    #    screen.addstr(1,1,"Key: "+key+"("+str(len(key))+")"+" - "+str(ord(key)) if len(key)==1 else "")
+    #    screen.refresh()
+    return
 
-def KeyInput(screen=None):
-    try:
-        #Half second timeout for key input
-        curses.halfdelay(5)
-        key=screen.getkey()
-        if key==chr(10):
-            key="KEY_ENTER"
-    except KeyboardInterrupt:
-        #User pressed Ctrl+C - exit program
-        key="KB_INTERRUPT"
-    except curses.error:
-        #Timeout expired without keypress - reassemble and emulate
-        #(Could be other error but curses doesn't have way to distinguish)
-        key="TIMEOUT"
-    return key
-
-#File input
-#==========
-def FileInput():
-    from sys import argv, exit
-    error_exit=False
-    show_help=False
-    file_input=""
-    if len(argv)==1:
-        #No arguments - proceed to interactive mode
-        pass
-    elif len(argv)==2:
-        #One argument - filename to load or -h
-        if argv[1]=="-h":
-            show_help=True
-            error_exit=True
-        else:
-            try:
-                f=open(argv[1])
-                file_input=f.read()
-                f.close()
-            except:
-                print(f"Unable to open '{argv[1]}'") 
-                show_help=False
-                error_exit=True
+def KeyInput(key):
+    if key=="Backspace":
+        return "KEY_BACKSPACE"
+    elif key=="ArrowLeft":
+        return "KEY_LEFT"
+    elif key=="ArrowRight":
+        return "KEY_RIGHT"
+    elif key=="ArrowUp":
+        return "KEY_UP"
+    elif key=="ArrowDown":
+        return "KEY_DOWN"
+    elif key=="Home":
+        return "KEY_HOME"
+    elif key=="End":
+        return "KEY_END"
+    elif key=="Delete":
+        return "KEY_DC"
+    elif key=="Enter":
+        return "KEY_ENTER"
+    elif len(key)==1 and key.isalnum():
+        return key
+    elif key in " ~`!@#$%^&*()_+-={}[];':<>,.?/|\"\\":
+        return key
     else:
-        #More than one argument - error
-        print("Invalid arguments")
-        show_help=True
-        error_exit=True
+        return "(none)"
 
-    #If any errors processing command line or -h, show help message and exit
-    if error_exit:
-        if show_help:
-            #TODO: help message
-            print("Help")
-        exit()
-
-    return file_input
+#File input - none for JavaScript version
+#========================================
+def FileInput():
+    return ""
 
 #Exit - abstract here since JavaScript version can't exit
 #========================================================
 def ExitProgram():
-    from sys import exit
-    exit()
+    return
 
 #Main assembler function
 #=======================
-#Called by main script to initiate curses
-def BeginAssembler(assembler_func,file_input):
-    curses.wrapper(assembler_func,file_input)
+#Called by Linux version - ignore
+def BeginAssembler(dummy1,dummy2):
+    return
+

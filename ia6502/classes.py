@@ -323,8 +323,8 @@ class ProcessorClass:
 
     #deepcopy not supported by Transcrypt - use this instead
     def classcopy(self,source):
-        for var,val in vars(source).items():
-            setattr(self,var,getattr(source,var))
+        for varname,val in vars(source).items():
+            setattr(self,varname,getattr(source,varname))
 
 #Line of assembly text including tokenized form, colored text, assembled bytes etc 
 class LineClass:
@@ -511,6 +511,11 @@ class LineClass:
             for new_val, new_type in new_symbols:
                 self.symbol_list+=[(new_val,new_type)]
             new_symbols=[]
+    
+    #TODO: remove
+    #for symbol in self.symbol_list:
+    #    console.log(symbol[0]+","+symbol[1])
+
 
     #State machine for verifying syntax - edit in spreadsheet, not here
     _verification_state_machine={
@@ -1539,3 +1544,11 @@ class LineClass:
                 temp_obj.update()
                 f.write(test+" - "+temp_obj.pattern+"\n")
 
+#State of editor between keypresses
+class EditorStateClass():
+   def __init__(self): 
+        self.current_line=0
+        self.input_str=""
+        self.input_ptr=0
+        self.redraw_text=True
+        self.last_mode="key"

@@ -1548,7 +1548,7 @@ def mode_ZPR(emu_line):
     emu_line.source_byte=data
     return address,data
 
-#Instructions helper functions
+#Instruction helper functions
 def RelAddress(emu_line,address,condition,size=2,invert=False):
     if address==-1:
         return -1
@@ -1642,6 +1642,7 @@ def op_ADC(emu_line,address,data,mode):
     if emu_line.CPU.A==-1 or data==-1 or emu_line.CPU.C=="?" or emu_line.CPU.D=="?":
         emu_line.CPU.A=-1
         emu_line.CPU.C="?"
+        emu_line.CPU.V="?"
     else:
         if emu_line.CPU.D:
             #Decimal mode
@@ -2229,6 +2230,7 @@ def op_SBC(emu_line,address,data,mode):
     if emu_line.CPU.A==-1 or data==-1 or emu_line.CPU.C=="?" or emu_line.CPU.D=="?":
         emu_line.CPU.A=-1
         emu_line.CPU.C="?"
+        emu_line.CPU.V="?"
     else:
         if emu_line.CPU.D:
             #Decimal mode

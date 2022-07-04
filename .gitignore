@@ -1,3 +1,6 @@
 *.swp
 *.tmux
 debug.txt
+website/
+**/*.pyc
+**/__pycache__/

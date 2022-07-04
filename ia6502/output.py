@@ -41,6 +41,23 @@ output_funcs={}
 
 #Functions
 #=========
+
+#Transcrypt does not translate hex function so reimplement :/
+def hex(num):
+    if num<0:
+        return "0x0"
+    result=""
+    while num:
+        remainder=num%16
+        if remainder<10:
+            result=str(remainder)+result
+        else:
+            result=chr(87+remainder)+result
+        num=int(num/16)
+    if result=="":
+        result="0"
+    return "0x"+result
+
 def Hex2(num):
     if num==-1:
         return "??"
@@ -51,7 +68,10 @@ def Hex4(num):
     if num==-1:
         return "????"
     else:
-        return ("0000"+hex(num)[2:])[-4:].upper()
+        #Bugged in Transcrypt!
+        #return ("0000"+hex(num)[2:])[-4:].upper()
+        result=(("0000"+(hex(num)[2:]))).upper()
+        return result[-4:]
 
 def DrawAssembler(program_lines,screen=None):
     global output_funcs
