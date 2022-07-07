@@ -11,9 +11,6 @@ MAX_INSTRUCTIONS=100    #Max instructions to execute to prevent endless loop
 emu_addresses={}
 emu_mem=[]
 program_lines=[LineClass()]
-#TODO: remove
-debug_error=[]
-
 
 #Auto-generated functions for emulated instructions
 #(See emu_generator/ for script. Don't edit here!)
@@ -1345,10 +1342,6 @@ def Execute6502(emu_PC,last_line):
     global emu_mem
     global emu_addresses
     global program_lines
-    #TODO: remove
-    global debug_error
-
-    debug_error+=[f"Execute6502: {last_line}"]
 
     #TODO: support self mod
     if emu_PC not in emu_addresses:
@@ -1367,12 +1360,10 @@ def Execute6502(emu_PC,last_line):
     if last_line!=-1:
         #Transcrypt conversion to JavaScript does not support deepcopy
         #program_lines[new_index].CPU=deepcopy(program_lines[last_line].CPU)
-        debug_error+=[f"{new_index} inherits from {last_line}"]
         program_lines[new_index].CPU.classcopy(program_lines[last_line].CPU)
         program_lines[new_index].CPU.reset_changed()
     else:
         #No line to copy from - reset
-        debug_error+=["last_line=-1"]
         program_lines[new_index].CPU.reset_regs()
         program_lines[new_index].CPU.reset_changed()
     #Reset source and destination info
@@ -1393,7 +1384,6 @@ def Execute6502(emu_PC,last_line):
         return True,emu_PC,last_line
 
 #Instruction modes
-#TODO: put in order
 def FilterAddress(emu_line,byte_count,addition):
     global emu_mem
     if addition==-1:
@@ -1416,18 +1406,6 @@ def FilterZP(address,addition):
         return -1
     return emu_mem[address_lo]+emu_mem[address_hi]<<8
 
-def mode_IMP(emu_line):
-    global emu_mem
-    address=emu_line.address
-    data=0  #dummy value
-    return address,data
-
-def mode_IMMED(emu_line):
-    global emu_mem
-    address=emu_line.address+1
-    data=emu_mem[address]
-    return address,data
-
 def mode_ABS(emu_line):
     global emu_mem
     address=FilterAddress(emu_line,2,0)
@@ -1446,22 +1424,44 @@ def mode_ABSY(emu_line):
     data=emu_mem[address] if address!=-1 else -1
     return address,data
 
-def mode_ZP(emu_line):
+def mode_IAX(emu_line):
     global emu_mem
-    address=FilterAddress(emu_line,1,0)
-    data=emu_mem[address] if address!=-1 else -1
-    return address,data
-    
-def mode_ZPX(emu_line):
-    global emu_mem
-    address=FilterAddress(emu_line,1,emu_line.CPU.X)
-    data=emu_mem[address] if address!=-1 else -1
+    address=FilterAddress(emu_line,2,emu_line.CPU.X)
+    emu_line.source_address=address
+    if address!=-1:
+        address_lo=emu_mem[address]
+        address_hi=emu_mem[(address+1)%0x10000]
+        if address_lo==-1 or address_hi==-1:
+            address=-1
+        else:
+            address=address_lo+(address_hi<<8)
+    data=0 #dummy value
     return address,data
 
-def mode_ZPY(emu_line):
+def mode_IMMED(emu_line):
     global emu_mem
-    address=FilterAddress(emu_line,1,emu_line.CPU.Y)
-    data=emu_mem[address] if address!=-1 else -1
+    address=emu_line.address+1
+    data=emu_mem[address]
+    return address,data
+
+def mode_IMP(emu_line):
+    global emu_mem
+    address=emu_line.address
+    data=0  #dummy value
+    return address,data
+
+def mode_IND(emu_line):
+    global emu_mem
+    address=FilterAddress(emu_line,2,0)
+    emu_line.source_address=address
+    if address!=-1:
+        address_lo=emu_mem[address]
+        address_hi=emu_mem[(address+1)%0x10000]
+        if address_lo==-1 or address_hi==-1:
+            address=-1
+        else:
+            address=address_lo+(address_hi<<8)
+    data=0 #dummy value
     return address,data
 
 def mode_IZP(emu_line):
@@ -1489,34 +1489,6 @@ def mode_IZY(emu_line):
     data=emu_mem[address] if address!=-1 else -1
     return address,data
 
-def mode_IND(emu_line):
-    global emu_mem
-    address=FilterAddress(emu_line,2,0)
-    emu_line.source_address=address
-    if address!=-1:
-        address_lo=emu_mem[address]
-        address_hi=emu_mem[(address+1)%0x10000]
-        if address_lo==-1 or address_hi==-1:
-            address=-1
-        else:
-            address=address_lo+(address_hi<<8)
-    data=0 #dummy value
-    return address,data
-
-def mode_IAX(emu_line):
-    global emu_mem
-    address=FilterAddress(emu_line,2,emu_line.CPU.X)
-    emu_line.source_address=address
-    if address!=-1:
-        address_lo=emu_mem[address]
-        address_hi=emu_mem[(address+1)%0x10000]
-        if address_lo==-1 or address_hi==-1:
-            address=-1
-        else:
-            address=address_lo+(address_hi<<8)
-    data=0 #dummy value
-    return address,data
-
 def mode_REL(emu_line):
     address=FilterAddress(emu_line,1,0)
     if address!=-1:
@@ -1527,6 +1499,24 @@ def mode_REL(emu_line):
             if address<0:
                 address+=0x10000
     data=0 #dummy value
+    return address,data
+
+def mode_ZP(emu_line):
+    global emu_mem
+    address=FilterAddress(emu_line,1,0)
+    data=emu_mem[address] if address!=-1 else -1
+    return address,data
+    
+def mode_ZPX(emu_line):
+    global emu_mem
+    address=FilterAddress(emu_line,1,emu_line.CPU.X)
+    data=emu_mem[address] if address!=-1 else -1
+    return address,data
+
+def mode_ZPY(emu_line):
+    global emu_mem
+    address=FilterAddress(emu_line,1,emu_line.CPU.Y)
+    data=emu_mem[address] if address!=-1 else -1
     return address,data
 
 def mode_ZPR(emu_line):

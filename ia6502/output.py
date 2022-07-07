@@ -101,7 +101,7 @@ def DrawAssembler(program_lines,screen=None):
         else:
             color="none"
        
-        #TODO: why did I add support for $$$$ here?
+        #Why did I add support for $$$$ here?
         address=Hex4(line.address)
         DrawTextFunc(ADDRESS_X,draw_y,address,screen,color)
         DrawTextFunc(ADDRESS_X+5,draw_y,":",screen)

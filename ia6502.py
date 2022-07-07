@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 
 #TODO: more comments
-#TODO: screen refresh very noticeable
+# - ia6502 done
+# - classes done
 #TODO: limit number of new lines or scroll
-#TODO: breakpoints?
 #TODO: status output
-#TODO: Add cycles column
-#TODO: help message and exit
-#TODO: check all other files for TODO
-#TODO: remove Transcrypt references in brython.py
 #TODO: range error and mode not found should have red address
+#TODO: one TODO in emulator.py
+#TODO: copy brython to local folder
+#TODO: test file like in screenshot - longer
 
 #TODO at end:
 # - Kowalski cant do LDA 3+(4)
-# - double check all debug_msgs removed
 # - check flags in Kowalski
-# - check instructions in Kowalski
+#   - what did I mean?
+# - check missing instructions in Kowalski
+#   - rmb?
 # - all TODOs
+# - README.md
 
 #Linux console version with curses
 from ia6502.linux import *
@@ -41,7 +42,6 @@ def AssemblerStep(editor_state,key):
     global emu_addresses    #Dictionary of addresses with code or data defined in aseembly source
     global program_lines    #List of source lines containing parsed symbols and CPU state
     global COLOR_DICT       #Dictionary of colors by use (registers, numbers, etc)
-    global file_input       #Input from file given at command line if any
 
     #Make local copies of editor_state members. Restore below.
     #Originally designed as part of InteractiveAssembler. Factored out to work with Brython.
@@ -67,6 +67,7 @@ def AssemblerStep(editor_state,key):
         #Keyboard handler never returns this code in JavaScript version
         ExitProgram()
     elif key=="KEY_RESIZE":
+        #Signal that terminal was resized
         resimulate=True
     elif key=="KEY_BACKSPACE":
         if input_ptr!=0:
@@ -90,6 +91,7 @@ def AssemblerStep(editor_state,key):
         if input_ptr>0:
             input_ptr-=1
         elif current_line>0:
+            #At beginning of line - move to line above
             program_lines[current_line].raw_str=input_str
             input_str=program_lines[current_line-1].raw_str
             input_ptr=len(input_str)
@@ -100,6 +102,7 @@ def AssemblerStep(editor_state,key):
         if input_ptr<len(input_str):
             input_ptr+=1
         elif current_line<len(program_lines)-1:
+            #At end of line - move to line below
             program_lines[current_line].raw_str=input_str
             input_str=program_lines[current_line+1].raw_str
             input_ptr=0
@@ -114,6 +117,7 @@ def AssemblerStep(editor_state,key):
                 input_ptr=len(input_str)
             current_line-=1
         elif input_ptr>0:
+            #At first line - move cursor to beginning of line
             input_ptr=0
         else:
             redraw_text=False
@@ -125,6 +129,7 @@ def AssemblerStep(editor_state,key):
                 input_ptr=len(input_str)
             current_line+=1
         elif input_ptr<len(input_str):
+            #At last line - move cursor to end of line
             input_ptr=len(input_str)
         else:
             redraw_text=False
@@ -138,7 +143,7 @@ def AssemblerStep(editor_state,key):
             input_ptr=len(input_str)
         else:
             redraw_text=False
-    elif key=="KEY_DC":
+    elif key=="KEY_DC": #Delete key
         if input_ptr!=len(input_str):
             input_str=input_str[:input_ptr]+input_str[input_ptr+1:]
         elif current_line<len(program_lines)-1:
@@ -158,14 +163,14 @@ def AssemblerStep(editor_state,key):
     elif len(key)==1 and len(input_str)<MAX_INPUT_LEN:
         #Avoid escaped characters and other junk
         if key.isalnum() or key in " ~`!@#$%^&*()_+-={}[];':<>,.?/|\"\\":
-            #TODO: does not work for F1-F12 - inserts multiple characters?
             input_str=input_str[:input_ptr]+key+input_str[input_ptr:]
             input_ptr+=1
     else:
         redraw_text=False
 
     #Update program line
-    if redraw_text and not file_input:
+    if redraw_text:
+        #Save currently edited line
         program_lines[current_line].raw_str=input_str
         program_lines[current_line].raw_str_ptr=input_ptr
 
@@ -177,11 +182,13 @@ def AssemblerStep(editor_state,key):
         current_address=START_ADDRESS
         symbol_unknown_indexes=[]
         for i,line in enumerate(program_lines):
+            #Resolve symbols and generate machine code where possible
             line.address=current_address
             line.selected_line=(i==current_line)
             line.replaced_symbols={}
             line.pass_number=1
             current_address=line.update(current_address)
+            #Keep track of lines with forward referenced labels and other unknown symbols
             if line.symbol_unknown:
                 symbol_unknown_indexes+=[i]
             current_address+=len(line.bytes)
@@ -197,7 +204,6 @@ def AssemblerStep(editor_state,key):
         emu_mem.clear()
         emu_mem+=[-1]*(2**16)
         emu_addresses.clear()
-
         for i,line in enumerate(program_lines):
             if line.address>0xFFFF:
                 #Mark address invalid if out of range even if no bytes generated
@@ -233,9 +239,9 @@ def AssemblerStep(editor_state,key):
         if resimulate:
             #First, look through source lines for starting instruction
             #Also, reset emulation status
-
             instruction_found=False
             for line in program_lines:
+                #First line with bytes without unresolved symbols
                 if line.bytes and not line.symbol_unknown and not instruction_found:
                     instruction_found=True
                     emu_PC=line.address
@@ -251,6 +257,7 @@ def AssemblerStep(editor_state,key):
                         break
                 #TODO: else? color cursor if max reached. color red?
 
+    #Stuff editor state variables back into class object
     editor_state.current_line=current_line
     editor_state.input_str=input_str 
     editor_state.input_ptr=input_ptr
@@ -278,6 +285,7 @@ def LinuxAssembler(screen,file_input):
 
        #Process keys
         if file_input:
+            #If file input left, load as key
             key=file_input[0]
             if key==chr(10):
                 key="KEY_ENTER"
@@ -288,7 +296,7 @@ def LinuxAssembler(screen,file_input):
                 editor_state.last_mode="key"
                 editor_state.redraw_text=True
 
-        #Assembler step
+        #Process key, resimulate, and update screen
         AssemblerStep(editor_state,key)
 
         #Redraw screen if necessary

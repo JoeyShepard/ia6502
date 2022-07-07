@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+#Import statement used by Brython
 from browser import window
 
 #Text colors for curses
@@ -14,7 +15,7 @@ COLOR_NAMES={
     "black":    0
     }
 
-#Colors for different types of text
+#Colors for different types of text - foreground, background
 TEXT_COLORS=(
     ("op",                  ("blue","black")),      #Instruction
     ("dir",                 ("magenta","black")),   #Assembly directive
@@ -49,8 +50,8 @@ TEXT_COLORS=(
     ("status stopped",      ("black","green")),     #Emulation status of line - has been run and stopped here
     )
 
-#Maps color types (op, dir, alpha, etc) in TEXT_COLORS to curses color codes in COLOR_NAMES
-#Filled in programmatically in InteractiveAssembler function below since needs initialized curses 
+#Maps color types (op, dir, alpha, etc) in TEXT_COLORS to hex values in COLOR_NAMES
+#Filled in below in InitColors like Linux version with curses
 COLOR_DICT={}
 
 #Screen output functions
@@ -78,12 +79,14 @@ def ReturnCursor(x,y,screen):
     window.drawString(x,y,screen_char,COLOR_NAMES["black"],COLOR_NAMES["green"])
     return
 
+#Render text to screen after all changes have been made
 def EndDrawing(screen):
     window.drawScreen()
     return
 
 #Key input
 #=========
+#Translate key names from JavaScript to curses
 def KeyInput(key):
     if key=="Backspace":
         return "KEY_BACKSPACE"
@@ -122,7 +125,7 @@ def ExitProgram():
 
 #Main assembler function
 #=======================
-#Called by Linux version - ignore
+#Called by Linux version - ignore and start assembler in main html file
 def BeginAssembler(dummy1,dummy2):
     return
 

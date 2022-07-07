@@ -137,8 +137,7 @@ def FileInput():
     #If any errors processing command line or -h, show help message and exit
     if error_exit:
         if show_help:
-            #TODO: help message
-            print("Help")
+            print("Usage: ia6502 [filename]")
         exit()
 
     return file_input
