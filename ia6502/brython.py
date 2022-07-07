@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+#****************************************************
+#* I/O functions for JavaScript port with Brython   * 
+#* (see linux.py for curses-based Linux I/O version *
+#****************************************************
+
+
 #Import statement used by Brython
 from browser import window
 

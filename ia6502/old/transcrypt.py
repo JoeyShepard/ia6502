@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 
-#Text colors for curses
+#*****************************************************
+#* I/O functions for JavaScript port with Transcrypt *
+#* (NO LONGER USED! SEE BRYTHON.PY INSTEAD)          *
+#*****************************************************
+
+
+#Text colors for Transcrypt (curses in Linux version)
 COLOR_NAMES={
     "blue":     0xFF,       #curses.COLOR_BLUE,
     "green":    0xFF00,     #curses.COLOR_GREEN,

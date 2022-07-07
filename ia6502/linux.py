@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+#************************************************
+#* I/O functions for curses-based Linux version *
+#* (see brython.py for JavaScript I/O version   *
+#************************************************
+
+
 import curses
 from ia6502.classes import EditorStateClass
 

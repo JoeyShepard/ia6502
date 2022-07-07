@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+#*******************************
+#* 6502 emulator functionality *
+#*******************************
+
+
 from ia6502.classes import *
 
 #Constants

@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+#**********************************************************************************
+#* Classes for 6502 Interactive Assembler:                                        *
+#* - ProcessorClass: state of 6502 processor for each line                        *
+#* - LineClass: line of assembly source including parsed symbols and colored text *
+#* - EditorStateClass: state of text editor                                       *
+#**********************************************************************************
+
+
 #Constants
 #=========
 START_ADDRESS=0xC000    #Default start address if no .ORG

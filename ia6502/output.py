@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+
+#***************************************************
+#* Screen output for drawing interactive assembler *
+#* (works with Brython or Linux version)           *
+#***************************************************
+
+
 #Constants
 #=========
 MAX_INPUT_LEN=20
