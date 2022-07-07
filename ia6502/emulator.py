@@ -4,10 +4,10 @@ from ia6502.classes import *
 
 #Constants
 #=========
-MAX_INSTRUCTIONS=100    #Max instructions to execute to prevent endless loop
+MAX_INSTRUCTIONS=1000    #Max instructions to execute to prevent endless loop
 
 #Globals
-#======
+#=======
 emu_addresses={}
 emu_mem=[]
 program_lines=[LineClass()]
@@ -1356,9 +1356,11 @@ def Execute6502(emu_PC,last_line):
         if last_line!=-1:
             program_lines[last_line].execution_status="stopped"
         return False,emu_PC,last_line
+
     #Copy processor state to next line
     if last_line!=-1:
         #Transcrypt conversion to JavaScript does not support deepcopy
+        #(No longer using Transcrypt but leave for now)
         #program_lines[new_index].CPU=deepcopy(program_lines[last_line].CPU)
         program_lines[new_index].CPU.classcopy(program_lines[last_line].CPU)
         program_lines[new_index].CPU.reset_changed()
@@ -1379,51 +1381,35 @@ def Execute6502(emu_PC,last_line):
         program_lines[new_index].execution_status="stopped" 
         return False,emu_PC,last_line
     else:    
+        #Instruction executed - continue executing
         last_line=new_index
         program_lines[new_index].execution_status="run" 
         return True,emu_PC,last_line
 
 #Instruction modes
-def FilterAddress(emu_line,byte_count,addition):
-    global emu_mem
-    if addition==-1:
-        return -1
-    address=addition
-    for i in range(byte_count):
-        byte=emu_mem[emu_line.address+i+1]
-        if byte==-1:
-            return -1
-        address+=byte<<(i*8)
-    return address%(0x100**byte_count)
 
-def FilterZP(address,addition):
-    global emu_mem
-    if address==-1 or addition==-1:
-        return -1
-    address_lo=(address+addition)%0x100
-    address_hi=(address+addition+1)%0x100
-    if emu_mem[address_lo]==-1 or emu_mem[address_hi]==-1:
-        return -1
-    return emu_mem[address_lo]+emu_mem[address_hi]<<8
-
+#Absolute addressing mode - ie LDA $1234
 def mode_ABS(emu_line):
     global emu_mem
     address=FilterAddress(emu_line,2,0)
     data=emu_mem[address] if address!=-1 else -1
     return address,data
 
+#Absolute,X addressing mode - ie LDA $1234,X
 def mode_ABSX(emu_line):
     global emu_mem
     address=FilterAddress(emu_line,2,emu_line.CPU.X)
     data=emu_mem[address] if address!=-1 else -1
     return address,data
 
+#Absolute,Y addressing mode - ie LDA $1234,Y
 def mode_ABSY(emu_line):
     global emu_mem
     address=FilterAddress(emu_line,2,emu_line.CPU.Y)
     data=emu_mem[address] if address!=-1 else -1
     return address,data
 
+#Indirect X addressing mode - ie JMP ($1234,X)
 def mode_IAX(emu_line):
     global emu_mem
     address=FilterAddress(emu_line,2,emu_line.CPU.X)
@@ -1438,18 +1424,21 @@ def mode_IAX(emu_line):
     data=0 #dummy value
     return address,data
 
+#Immediate addressing mode - ie LDA #5
 def mode_IMMED(emu_line):
     global emu_mem
     address=emu_line.address+1
     data=emu_mem[address]
     return address,data
 
+#Implied addressing mode - ie CLC
 def mode_IMP(emu_line):
     global emu_mem
     address=emu_line.address
     data=0  #dummy value
     return address,data
 
+#Indirect addressing - ie JMP ($1234) 
 def mode_IND(emu_line):
     global emu_mem
     address=FilterAddress(emu_line,2,0)
@@ -1464,6 +1453,7 @@ def mode_IND(emu_line):
     data=0 #dummy value
     return address,data
 
+#Indirect zero page addressing mode - ie LDA ($23)
 def mode_IZP(emu_line):
     global emu_mem
     address=FilterAddress(emu_line,1,0)
@@ -1471,6 +1461,7 @@ def mode_IZP(emu_line):
     data=emu_mem[address] if address!=-1 else -1
     return address,data
 
+#Indirect X zero page addressing mode - ie LDA ($23,X)
 def mode_IZX(emu_line):
     global emu_mem
     address=FilterAddress(emu_line,1,0)
@@ -1478,6 +1469,7 @@ def mode_IZX(emu_line):
     data=emu_mem[address] if address!=-1 else -1
     return address,data
 
+#Indirect Y zero page addressing mode - ie LDA ($23),Y
 def mode_IZY(emu_line):
     global emu_mem
     if emu_line.CPU.Y==-1:
@@ -1489,6 +1481,7 @@ def mode_IZY(emu_line):
     data=emu_mem[address] if address!=-1 else -1
     return address,data
 
+#Relative addressing mode - ie BEQ label
 def mode_REL(emu_line):
     address=FilterAddress(emu_line,1,0)
     if address!=-1:
@@ -1501,24 +1494,28 @@ def mode_REL(emu_line):
     data=0 #dummy value
     return address,data
 
+#Zero page addressing mode - ie LDA $23
 def mode_ZP(emu_line):
     global emu_mem
     address=FilterAddress(emu_line,1,0)
     data=emu_mem[address] if address!=-1 else -1
     return address,data
     
+#Zero pag,X addressing mode - ie LDA $23,X
 def mode_ZPX(emu_line):
     global emu_mem
     address=FilterAddress(emu_line,1,emu_line.CPU.X)
     data=emu_mem[address] if address!=-1 else -1
     return address,data
 
+#Zero page,Y addressing mode - ie LDA $23,Y
 def mode_ZPY(emu_line):
     global emu_mem
     address=FilterAddress(emu_line,1,emu_line.CPU.Y)
     data=emu_mem[address] if address!=-1 else -1
     return address,data
 
+#Zero page relative addressing mode - ie BBR0 $23, label
 def mode_ZPR(emu_line):
     global emu_mem
     address=emu_mem[emu_line.address+2]
@@ -1538,7 +1535,35 @@ def mode_ZPR(emu_line):
     emu_line.source_byte=data
     return address,data
 
+
 #Instruction helper functions
+
+#Check for uninitiated bytes at address before executing
+def FilterAddress(emu_line,byte_count,addition):
+    global emu_mem
+    if addition==-1:
+        return -1
+    address=addition
+    for i in range(byte_count):
+        byte=emu_mem[emu_line.address+i+1]
+        if byte==-1:
+            return -1
+        address+=byte<<(i*8)
+    return address%(0x100**byte_count)
+
+#Check for uninitiated bytes at address stored in ZP before executing
+def FilterZP(address,addition):
+    global emu_mem
+    #addition is X or Y to be added to address
+    if address==-1 or addition==-1:
+        return -1
+    address_lo=(address+addition)%0x100
+    address_hi=(address+addition+1)%0x100
+    if emu_mem[address_lo]==-1 or emu_mem[address_hi]==-1:
+        return -1
+    return emu_mem[address_lo]+emu_mem[address_hi]<<8
+
+#Calculate relative branch and halt if undefined byte in instruction
 def RelAddress(emu_line,address,condition,size=2,invert=False):
     if address==-1:
         return -1
@@ -1554,6 +1579,7 @@ def RelAddress(emu_line,address,condition,size=2,invert=False):
         #Branch not taken
         return emu_line.address+size
 
+#Check for undefined byte, calculate BBS or BBR, relative branch
 def ZprAddress(emu_line,data,address,bit,BBS):
     if data==-1:
         address=-1
@@ -1565,6 +1591,7 @@ def ZprAddress(emu_line,data,address,bit,BBS):
         address=RelAddress(emu_line,address,condition,size=3)
     return address
 
+#Push byte onto stack
 def PushByte(emu_line,byte):
     global emu_mem
     if emu_line.CPU.SP!=-1:
@@ -1576,6 +1603,7 @@ def PushByte(emu_line,byte):
     emu_line.dest_byte=byte
     emu_line.CPU.SP_changed=True
 
+#Pull byte from stack
 def PullByte(emu_line):
     global emu_mem
     if emu_line.CPU.SP!=-1:
@@ -1589,6 +1617,8 @@ def PullByte(emu_line):
     emu_line.CPU.SP_changed=True
     return byte
 
+#Compare two values and mark if comparison has undefined values
+#Also, set flags to reflect comparison
 def Compare(emu_line,data,cmp_val):
     if cmp_val==-1 or data==-1:
         emu_line.CPU.C="?"
@@ -1603,6 +1633,7 @@ def Compare(emu_line,data,cmp_val):
     emu_line.CPU.N_changed=True
     emu_line.CPU.Z_changed=True
 
+#RMB operation for RMB0-RMB7 instructions
 def RMB(emu_line,address,data,bit):
     global emu_mem
     if data!=-1 and address!=-1:
@@ -1615,6 +1646,7 @@ def RMB(emu_line,address,data,bit):
     emu_line.dest_address=address
     emu_line.dest_byte=result
 
+#SMB operation for SMB0-SMB7 instructions
 def SMB(emu_line,address,data,bit):
     global emu_mem
     if data!=-1 and address!=-1:
@@ -1627,7 +1659,8 @@ def SMB(emu_line,address,data,bit):
     emu_line.dest_address=address
     emu_line.dest_byte=result
 
-#Instructions
+
+#Emulated instructions
 def op_ADC(emu_line,address,data,mode):
     if emu_line.CPU.A==-1 or data==-1 or emu_line.CPU.C=="?" or emu_line.CPU.D=="?":
         emu_line.CPU.A=-1
