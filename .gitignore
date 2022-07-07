@@ -4,3 +4,4 @@ debug.txt
 website/
 **/*.pyc
 **/__pycache__/
+*.temp
