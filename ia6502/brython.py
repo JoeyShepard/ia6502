@@ -9,7 +9,10 @@
 #Import statement used by Brython
 from browser import window
 
-#Text colors for curses
+CURSOR_FG="black"
+CURSOR_BG="green"
+
+#Text colors for Brython (curses in Linux version)
 COLOR_NAMES={
     "blue":     0xFF,
     "green":    0xFF00,
@@ -62,15 +65,18 @@ COLOR_DICT={}
 
 #Screen output functions
 #=======================
+
+#Initialize color pairs in COLOR_DICT used for terminal output in browser
 def InitColors():
     for color in TEXT_COLORS:
         COLOR_DICT[color[0]]=(COLOR_NAMES[color[1][0]],COLOR_NAMES[color[1][1]])
     COLOR_DICT["none"]=(COLOR_NAMES["white"],COLOR_NAMES["black"])
 
+#Clear terminal in browser
 def ClearScreen(screen):
     window.clearScreen()
-    return
 
+#Draw colored text in terminal in browser
 def DrawText(draw_x,draw_y,text,screen,color="none"):
     if color not in COLOR_DICT:
         color="none"
@@ -79,16 +85,14 @@ def DrawText(draw_x,draw_y,text,screen,color="none"):
     window.drawString(draw_x,draw_y,text,fgcolor,bgcolor)
     return draw_x+len(text)
 
-#Place cursor on input line
+#Place green cursor on input line
 def ReturnCursor(x,y,screen):
     screen_char=window.getScreenChar(x,y)
-    window.drawString(x,y,screen_char,COLOR_NAMES["black"],COLOR_NAMES["green"])
-    return
+    window.drawString(x,y,screen_char,COLOR_NAMES[CURSOR_FG],COLOR_NAMES[CURSOR_BG])
 
-#Render text to screen after all changes have been made
+#Render text to terminal in browser after all changes have been made
 def EndDrawing(screen):
     window.drawScreen()
-    return
 
 #Key input
 #=========
@@ -122,7 +126,7 @@ def KeyInput(key):
 #File input - none for JavaScript version
 #========================================
 def FileInput():
-    return ""
+    return
 
 #Exit - abstract here since JavaScript version can't exit
 #========================================================

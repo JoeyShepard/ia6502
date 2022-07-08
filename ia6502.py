@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
-#TODO: more comments
-# - ia6502 done
-# - classes done
+#****************************************
+#* Main 6502 Interactive Assembler file *
+#****************************************
+
 #TODO: limit number of new lines or scroll
 #TODO: status output
 #TODO: range error and mode not found should have red address
 #TODO: one TODO in emulator.py
 #TODO: copy brython to local folder
-#TODO: test file like in screenshot - longer
 
 #TODO at end:
 # - Kowalski cant do LDA 3+(4)

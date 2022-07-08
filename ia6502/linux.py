@@ -62,23 +62,29 @@ COLOR_DICT={}
 
 #Screen output functions
 #=======================
+
+#Initalize curses color pairs in COLOR_DICT
+#Needs own function like this since must happen after curses initialization
 def InitColors():
     for i,color in enumerate(TEXT_COLORS):
         curses.init_pair(i+1,COLOR_NAMES[color[1][0]],COLOR_NAMES[color[1][1]])
         COLOR_DICT[color[0]]=curses.color_pair(i+1)
     COLOR_DICT["none"]=curses.color_pair(0)
 
+#Clear curses terminal
 def ClearScreen(screen):
     screen.clear()
 
+#Draw colored text in curses terminal
 def DrawText(draw_x,draw_y,text,screen,color="none"):
     screen.addstr(draw_y,draw_x,text,COLOR_DICT[color])
     return draw_x+len(text)
 
-#Place cursor on input line
+#Place green cursor on input line
 def ReturnCursor(x,y,screen):
     screen.move(y,x)
-    
+ 
+#Render text to curses terminal after all changes have been made
 def EndDrawing(screen):
     screen.refresh()
 
@@ -94,6 +100,7 @@ def GetKeyNames(screen):
         screen.addstr(1,1,"Key: "+key+"("+str(len(key))+")"+" - "+str(ord(key)) if len(key)==1 else "")
         screen.refresh()
 
+#Key input with 500ms timeout and keyboard interrupt handling
 def KeyInput(screen=None):
     try:
         #Half second timeout for key input
@@ -110,8 +117,8 @@ def KeyInput(screen=None):
         key="TIMEOUT"
     return key
 
-#File input
-#==========
+#File input from command line (optional)
+#=======================================
 def FileInput():
     from sys import argv, exit
     error_exit=False
@@ -122,20 +129,23 @@ def FileInput():
         pass
     elif len(argv)==2:
         #One argument - filename to load or -h
+        #Show help message and exit
         if argv[1]=="-h":
             show_help=True
             error_exit=True
         else:
+            #One argument - treat as filename to load
             try:
                 f=open(argv[1])
                 file_input=f.read()
                 f.close()
             except:
+                #Error in loading file - error and exit
                 print(f"Unable to open '{argv[1]}'") 
                 show_help=False
                 error_exit=True
     else:
-        #More than one argument - error
+        #More than one argument - error and exit
         print("Invalid arguments")
         show_help=True
         error_exit=True
@@ -157,5 +167,6 @@ def ExitProgram():
 #Main assembler function
 #=======================
 #Called by main script to initiate curses
+#Need to pass function as argument to wrapper for curses cleanup
 def BeginAssembler(assembler_func,file_input):
     curses.wrapper(assembler_func,file_input)
