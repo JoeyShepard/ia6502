@@ -1636,6 +1636,6 @@ class EditorStateClass():
         self.input_ptr=0
         self.redraw_text=True
         self.last_mode="key"
-        self.status_line=""
+        self.status_line="Typing..."
         self.row_count=0
         self.col_count=0

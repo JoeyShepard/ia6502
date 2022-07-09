@@ -10,6 +10,7 @@ jmp uninit
 .org $D000
 .set foo, 5
 .set bar,foo+2
+.db bar
 .dw *
 
 ;Unknown symbols

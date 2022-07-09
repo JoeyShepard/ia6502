@@ -5,7 +5,7 @@
 #****************************************
 
 #TODO: limit number of new lines or scroll
-#TODO: range error and mode not found should have red address
+#      - limited lines printed but what to do when cursor goes off screen?
 #TODO: one TODO in emulator.py
 
 #TODO at end:
@@ -253,11 +253,15 @@ def AssemblerStep(editor_state,key):
                 for i in range(MAX_INSTRUCTIONS):
                     success,emu_PC,last_line=Execute6502(emu_PC,last_line)
                     if not success:
-                        editor_state.status_line=f"Emulated {instruction_count} instructions"
+                        plural="s" if instruction_count!=1 else ""
+                        editor_state.status_line=f"Emulated {instruction_count} instruction{plural}"
                         break
                     instruction_count+=1
                 else:
-                    editor_state.status_line=f"Halted after {instruction_count} instructions"
+                    if last_line!=-1:
+                        program_lines[last_line].execution_status="stopped"
+                    plural="s" if instruction_count!=1 else ""
+                    editor_state.status_line=f"Halted after {instruction_count} instruction{plural}"
         else:
             editor_state.status_line="Typing..."
 
@@ -271,7 +275,7 @@ def AssemblerStep(editor_state,key):
 #Draw assembler output
 def DrawAll(screen,editor_state):
     ClearScreen(screen)
-    DrawAssembler(program_lines,screen)
+    DrawAssembler(program_lines,screen,editor_state)
     DrawStatusLine(screen,editor_state)
     ReturnCursor(INPUT_X+editor_state.input_ptr,LINES_START_Y+editor_state.current_line,screen)
     EndDrawing(screen)
