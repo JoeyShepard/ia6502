@@ -8,7 +8,6 @@
 #TODO: status output
 #TODO: range error and mode not found should have red address
 #TODO: one TODO in emulator.py
-#TODO: copy brython to local folder
 
 #TODO at end:
 # - Kowalski cant do LDA 3+(4)
@@ -16,7 +15,6 @@
 #   - what did I mean?
 # - check missing instructions in Kowalski
 #   - rmb?
-# - all TODOs
 # - README.md
 
 #Linux console version with curses
@@ -33,6 +31,7 @@ output_funcs["DrawText"]=DrawText
 
 #Editor variables - needs to be global for JavaScript version
 editor_state=EditorStateClass()
+timer_id=None
 
 #Step to be performed every time keypress/timeout received
 def AssemblerStep(editor_state,key):
@@ -271,7 +270,8 @@ def DrawAll(screen,editor_state):
     ReturnCursor(INPUT_X+editor_state.input_ptr,LINES_START_Y+editor_state.current_line,screen)
     EndDrawing(screen)
 
-#Function called to begin program after setup
+#Function called to begin program after setup on Linux
+#Not used in JavaScript version, but difficult to abstract into linux.py
 def LinuxAssembler(screen,file_input):
     global editor_state
     
@@ -303,10 +303,7 @@ def LinuxAssembler(screen,file_input):
         if editor_state.redraw_text and not file_input:
             DrawAll(screen,editor_state)
 
-#Get file input and exit if any command line errors
-file_input=FileInput()
-
 #Enter interactive assembler on Linux
 #Ignored in JavaScript version since key handler and timer based 
-BeginAssembler(LinuxAssembler,file_input)
+BeginAssembler("linux",LinuxAssembler)
 

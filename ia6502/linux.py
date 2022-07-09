@@ -2,7 +2,7 @@
 
 #************************************************
 #* I/O functions for curses-based Linux version *
-#* (see brython.py for JavaScript I/O version   *
+#* (see brython.py for JavaScript I/O version)  *
 #************************************************
 
 
@@ -168,5 +168,13 @@ def ExitProgram():
 #=======================
 #Called by main script to initiate curses
 #Need to pass function as argument to wrapper for curses cleanup
-def BeginAssembler(assembler_func,file_input):
-    curses.wrapper(assembler_func,file_input)
+def BeginAssembler(version,assembler_func):
+    if version!="linux":
+        print(f'Error: expected version "linux" but found "{version}". Something is very, very wrong.')
+    else:
+        #Check for file input on command line and exit if error
+        file_input=FileInput()
+        
+        #Pass assembler function to curses
+        curses.wrapper(assembler_func,file_input)
+

@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
 
-#****************************************************
-#* I/O functions for JavaScript port with Brython   * 
-#* (see linux.py for curses-based Linux I/O version *
-#****************************************************
+#*****************************************************
+#* I/O functions for JavaScript port with Brython    * 
+#* (see linux.py for curses-based Linux I/O version) *
+#*****************************************************
 
 
 #Import statement used by Brython
-from browser import window
+from browser import bind, console, document, timer, window
 
+#Constants
+TERM_COLS=98        #Terminal column count
+TERM_ROWS=32        #Terminal row count
 CURSOR_FG="black"
 CURSOR_BG="green"
+KB_TIMEOUT=500      #Keyboard timeout (ms)
 
 #Text colors for Brython (curses in Linux version)
 COLOR_NAMES={
-    "blue":     0xFF,
+    "blue":     0x4080FF,   #Light blue looks better on black than pure blue
     "green":    0xFF00,
     "cyan":     0xFFFF,
     "yellow":   0xFFFF00,
@@ -94,6 +98,13 @@ def ReturnCursor(x,y,screen):
 def EndDrawing(screen):
     window.drawScreen()
 
+#Draw assembler output
+def DrawAll(screen,editor_state):
+    ClearScreen(screen)
+    DrawAssembler(program_lines,screen)
+    ReturnCursor(INPUT_X+editor_state.input_ptr,LINES_START_Y+editor_state.current_line,screen)
+    EndDrawing(screen)
+
 #Key input
 #=========
 #Translate key names from JavaScript to curses
@@ -123,11 +134,6 @@ def KeyInput(key):
     else:
         return "(none)"
 
-#File input - none for JavaScript version
-#========================================
-def FileInput():
-    return
-
 #Exit - abstract here since JavaScript version can't exit
 #========================================================
 def ExitProgram():
@@ -135,7 +141,67 @@ def ExitProgram():
 
 #Main assembler function
 #=======================
-#Called by Linux version - ignore and start assembler in main html file
-def BeginAssembler(dummy1,dummy2):
-    return
+def BeginAssembler(version,assembler_func=None): 
+    #If called from main ia6502.py with version "linux", ignore.
+    #JavaScript version started in HTML file with version set to "brython".
+    if version=="linux":
+        return
+    elif version=="brython":
+        global timer_id
+
+        #Short code example loaded at startup
+        CODE_EXAMPLE="lda #33\nrol\n"
+
+        #Initialization of js-curses. All JS functions loaded in window object.
+        window.screenSetup(TERM_COLS,TERM_ROWS)
+
+        #Initialize assembler color list
+        InitColors()
+
+        #Install key handler defined below
+        document.bind("keydown",key_handler)
+        
+        #No timer running - started when key pressed
+        timer_id=None
+
+        #Load  example defined above
+        for key in CODE_EXAMPLE:
+            editor_state.last_mode="key"
+            editor_state.redraw_text=False
+            key="KEY_ENTER" if key=="\n" else key
+            AssemblerStep(editor_state,key)
+
+        #Draw assembler first time
+        AssemblerStep(editor_state,"TIMEOUT")
+        DrawAll(0,editor_state)
+
+        console.log("i6502 loaded!")
+    else:
+        console.log("Unknown version: "+version)
+        console.log("ia6502 failed to load!")
+
+#Key handler
+def key_handler(event):
+    global timer_id
+    global KB_TIMEOUT
+    if timer_id!=None:
+        timer.clear_timeout(timer_id)
+        timer_id=None
+    key=KeyInput(event.key)
+    editor_state.last_mode="key"
+    editor_state.redraw_text=True
+    AssemblerStep(editor_state,key)
+    if (editor_state.redraw_text):
+        DrawAll(0,editor_state)
+    event.stopPropagation()
+    timer_id=timer.set_timeout(timer_handler,KB_TIMEOUT)
+
+#Timer handler
+def timer_handler():
+    global timer_id
+    timer_id=None
+    AssemblerStep(editor_state,"TIMEOUT")
+    if (editor_state.redraw_text):
+        DrawAll(0,editor_state)
+
 
