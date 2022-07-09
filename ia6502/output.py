@@ -98,9 +98,9 @@ def DrawAssembler(program_lines,screen,editor_state):
 
     #Draw ▲ or ▼ if screen scrolled
     if editor_state.y_offset>0:
-        DrawTextFunc(STATUS_X,HEADER_Y,"▲",screen)
+        DrawTextFunc(STATUS_X,HEADER_Y,"▲",screen,"scroll arrows")
     if len(program_lines)>editor_state.y_offset+editor_state.row_count-2:
-        DrawTextFunc(STATUS_X,editor_state.row_count-1,"▼",screen)
+        DrawTextFunc(STATUS_X,editor_state.row_count-1,"▼",screen,"scroll arrows")
 
     #Draw headers of columns: Program, register names, flags, etc
     DrawTextFunc(HEADER_X,HEADER_Y,HEADER_TEXT,screen)
@@ -172,6 +172,7 @@ def DrawAssembler(program_lines,screen,editor_state):
 
         #Assembly text source for line of assembly
         draw_x=INPUT_X
+
         #Loop through list of colored text and draw
         for text,color in line.text_symbol_list:
             DrawTextFunc(draw_x,draw_y,text,screen,color)

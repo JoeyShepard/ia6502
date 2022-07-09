@@ -1636,15 +1636,22 @@ class EditorStateClass():
         self.input_ptr=0
         self.redraw_text=True
         self.last_mode="key"
-        self.status_line="Typing..."
+        self.status_line="Typing..."    #Status line at bottom of screen
         self.row_count=0                #Row count of screen, not just editor
         self.col_count=0                #Column count of screen, not just editor
         self.y_offset=0                 #Offset for scrolling text on screen
 
     #Adjust offset for scrolling text
-    def adjust_offset(self):
+    def adjust_offset(self,program_len):
         if self.current_line-self.y_offset>self.row_count-3:
+            #Scroll screen down
             self.y_offset=self.current_line-(self.row_count-3)
         elif self.current_line-self.y_offset<=0:
+            #Scroll screen up
             self.y_offset=self.current_line
         
+        if self.y_offset>0 and (program_len-self.y_offset)<self.row_count-2:
+            #Adjust screen so blank lines not left at bottom if lines available
+            self.y_offset=program_len-(self.row_count-2)
+            if self.y_offset<0:
+                self.y_offset=0

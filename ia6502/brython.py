@@ -62,6 +62,7 @@ TEXT_COLORS=(
     ("status rerun",        ("cyan","black")),      #Emulation status of line - has been run more than once
     ("status stopped",      ("black","green")),     #Emulation status of line - has been run and stopped here
     ("status line",         ("black","magenta")),   #Status line at bottom of screen
+    ("scroll arrows",       ("black","white")),     #Scroll arrows at top and bottom of screen
     )
 
 #Maps color types (op, dir, alpha, etc) in TEXT_COLORS to hex values in COLOR_NAMES

@@ -4,8 +4,6 @@
 #* Main 6502 Interactive Assembler file *
 #****************************************
 
-#TODO: limit number of new lines or scroll
-#      - limited lines printed but what to do when cursor goes off screen?
 #TODO: one TODO in emulator.py
 
 #TODO at end:
@@ -159,7 +157,7 @@ def AssemblerStep(editor_state,key):
         editor_state.redraw_text=False
 
     #Update y offset for screen scrolling
-    editor_state.adjust_offset()
+    editor_state.adjust_offset(len(program_lines))
 
     #Update program line
     if editor_state.redraw_text:
