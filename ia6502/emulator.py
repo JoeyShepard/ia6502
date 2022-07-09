@@ -1348,7 +1348,6 @@ def Execute6502(emu_PC,last_line):
     global emu_addresses
     global program_lines
 
-    #TODO: support self mod
     if emu_PC not in emu_addresses:
         #Don't emulate if in unitialized memory
         if last_line!=-1:

@@ -92,7 +92,7 @@ def DrawText(draw_x,draw_y,text,screen,color="none"):
     return draw_x+len(text)
 
 #Place green cursor on input line
-def ReturnCursor(x,y,screen,editor_state):
+def ReturnCursor(x,y,screen):
     screen_char=window.getScreenChar(x,y)
     window.drawString(x,y,screen_char,COLOR_NAMES[CURSOR_FG],COLOR_NAMES[CURSOR_BG])
 
