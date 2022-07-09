@@ -158,6 +158,9 @@ def AssemblerStep(editor_state,key):
     else:
         editor_state.redraw_text=False
 
+    #Update y offset for screen scrolling
+    editor_state.adjust_offset()
+
     #Update program line
     if editor_state.redraw_text:
         #Save currently edited line
@@ -262,7 +265,7 @@ def DrawAll(screen,editor_state):
     ClearScreen(screen)
     DrawAssembler(program_lines,screen,editor_state)
     DrawStatusLine(screen,editor_state)
-    ReturnCursor(INPUT_X+editor_state.input_ptr,LINES_START_Y+editor_state.current_line,screen)
+    ReturnCursor(INPUT_X+editor_state.input_ptr,LINES_START_Y+editor_state.current_line-editor_state.y_offset,screen)
     EndDrawing(screen)
 
 #Function called to begin program after setup on Linux

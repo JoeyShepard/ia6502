@@ -36,6 +36,7 @@ REG_SP_X=REG_Y_X+REG_Y_WIDTH            #X value for column showing value of SP 
 FLAGS_X=REG_SP_X+REG_SP_WIDTH           #X value for column showing value of flags
 SOURCE_X=FLAGS_X+FLAGS_WIDTH            #X value for column showing source address and value
 DEST_X=SOURCE_X+SOURCE_WIDTH            #X value for column showing destination address and value
+STATUS_LINE_X=1                         #X value for status line at bottom of screen
 
 #Header text of columns
 HEADER_TEXT="Program              A      X   Y   SP   NV-BDIZC  Source     Destination"
@@ -95,17 +96,26 @@ def DrawAssembler(program_lines,screen,editor_state):
     #Text drawing function supplied by output module
     DrawTextFunc=output_funcs["DrawText"]
 
+    #Draw ▲ or ▼ if screen scrolled
+    if editor_state.y_offset>0:
+        DrawTextFunc(STATUS_X,HEADER_Y,"▲",screen)
+    if len(program_lines)>editor_state.y_offset+editor_state.row_count-2:
+        DrawTextFunc(STATUS_X,editor_state.row_count-1,"▼",screen)
+
     #Draw headers of columns: Program, register names, flags, etc
     DrawTextFunc(HEADER_X,HEADER_Y,HEADER_TEXT,screen)
 
     #Draw lines of assembly input
-    for i,line in enumerate(program_lines):
-        #Calculate Y offset once of lines of assembly
-        draw_y=LINES_START_Y+i
-
-        #Stop printing lines if reached bottom of screen
-        if draw_y>editor_state.row_count-2:
+    for i in range(editor_state.y_offset,editor_state.row_count+editor_state.y_offset-2):
+        
+        #Stop drawing if no lines left to draw
+        if i>=len(program_lines):
             break
+        else:
+            line=program_lines[i]
+
+        #Calculate Y offset once of lines of assembly
+        draw_y=LINES_START_Y+(i-editor_state.y_offset)
 
         #Execution status in status column of each executed line if executed
         if line.execution_status=="run":
@@ -257,6 +267,7 @@ def DrawStatusLine(screen,editor_state):
     DrawTextFunc=output_funcs["DrawText"]
 
     status_msg=" "+editor_state.status_line+" "
-    DrawTextFunc(0,editor_state.row_count-1,status_msg,screen,"status line")
+    DrawTextFunc(STATUS_LINE_X,editor_state.row_count-1,status_msg,screen,"status line")
+
 
 

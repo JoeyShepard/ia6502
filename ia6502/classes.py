@@ -1630,12 +1630,21 @@ class LineClass:
 
 #State of editor between keypresses
 class EditorStateClass():
-   def __init__(self): 
+    def __init__(self): 
         self.current_line=0
         self.input_str=""
         self.input_ptr=0
         self.redraw_text=True
         self.last_mode="key"
         self.status_line="Typing..."
-        self.row_count=0
-        self.col_count=0
+        self.row_count=0                #Row count of screen, not just editor
+        self.col_count=0                #Column count of screen, not just editor
+        self.y_offset=0                 #Offset for scrolling text on screen
+
+    #Adjust offset for scrolling text
+    def adjust_offset(self):
+        if self.current_line-self.y_offset>self.row_count-3:
+            self.y_offset=self.current_line-(self.row_count-3)
+        elif self.current_line-self.y_offset<=0:
+            self.y_offset=self.current_line
+        
