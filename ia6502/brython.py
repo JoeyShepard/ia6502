@@ -61,6 +61,7 @@ TEXT_COLORS=(
     ("status run",          ("green","black")),     #Emulation status of line - has been run
     ("status rerun",        ("cyan","black")),      #Emulation status of line - has been run more than once
     ("status stopped",      ("black","green")),     #Emulation status of line - has been run and stopped here
+    ("status line",         ("black","magenta")),   #Status line at bottom of screen
     )
 
 #Maps color types (op, dir, alpha, etc) in TEXT_COLORS to hex values in COLOR_NAMES
@@ -151,12 +152,13 @@ def BeginAssembler(version,assembler_func=None):
         #Initialize assembler color list
         InitColors()
 
+        #Initialize editor size
+        editor_state.col_count=TERM_COLS
+        editor_state.row_count=TERM_ROWS
+
         #Install key handler defined below
         document.bind("keydown",key_handler)
         
-        #No timer running - started when key pressed
-        timer_id=None
-
         #Load  example defined above
         for key in CODE_EXAMPLE:
             editor_state.last_mode="key"
