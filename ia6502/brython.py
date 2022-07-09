@@ -98,13 +98,6 @@ def ReturnCursor(x,y,screen):
 def EndDrawing(screen):
     window.drawScreen()
 
-#Draw assembler output
-def DrawAll(screen,editor_state):
-    ClearScreen(screen)
-    DrawAssembler(program_lines,screen)
-    ReturnCursor(INPUT_X+editor_state.input_ptr,LINES_START_Y+editor_state.current_line,screen)
-    EndDrawing(screen)
-
 #Key input
 #=========
 #Translate key names from JavaScript to curses

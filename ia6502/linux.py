@@ -54,6 +54,7 @@ TEXT_COLORS=(
     ("status run",          ("green","black")),     #Emulation status of line - has been run
     ("status rerun",        ("cyan","black")),      #Emulation status of line - has been run more than once
     ("status stopped",      ("black","green")),     #Emulation status of line - has been run and stopped here
+    ("status line",         ("black","magenta")),   #Status line at bottom of screen
     )
 
 #Maps color types (op, dir, alpha, etc) in TEXT_COLORS to curses color codes in COLOR_NAMES

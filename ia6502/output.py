@@ -92,7 +92,7 @@ def Hex4(num):
 def DrawAssembler(program_lines,screen=None):
     global output_funcs
 
-    #Text drawing function supplied by module
+    #Text drawing function supplied by output module
     DrawTextFunc=output_funcs["DrawText"]
 
     #Draw headers of columns: Program, register names, flags, etc
@@ -240,5 +240,14 @@ def DrawAssembler(program_lines,screen=None):
                     #dest_color="bytes unknown" if line.dest_byte==-1 else "none"
                     dest_color="reg changed"
                     DrawTextFunc(draw_x,draw_y,"$"+Hex2(line.dest_byte),screen,dest_color)
+
+def DrawStatusLine(screen,editor_state):
+    global output_funcs
+
+    #Text drawing function supplied by output module
+    DrawTextFunc=output_funcs["DrawText"]
+
+    status_msg=" "+editor_state.status_line+" "
+    DrawTextFunc(0,editor_state.row_count-1,status_msg,screen,"status line")
 
 

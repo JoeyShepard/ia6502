@@ -5,7 +5,6 @@
 #****************************************
 
 #TODO: limit number of new lines or scroll
-#TODO: status output
 #TODO: range error and mode not found should have red address
 #TODO: one TODO in emulator.py
 
@@ -49,7 +48,7 @@ def AssemblerStep(editor_state,key):
     input_ptr=editor_state.input_ptr
     redraw_text=editor_state.redraw_text
     last_mode=editor_state.last_mode
-
+    
     resimulate=False
     
     if key=="TIMEOUT":
@@ -250,11 +249,17 @@ def AssemblerStep(editor_state,key):
             #If instruction found, start executing
             if instruction_found:
                 last_line=-1
+                instruction_count=0
                 for i in range(MAX_INSTRUCTIONS):
                     success,emu_PC,last_line=Execute6502(emu_PC,last_line)
                     if not success:
+                        editor_state.status_line=f"Emulated {instruction_count} instructions"
                         break
-                #TODO: else? color cursor if max reached. color red?
+                    instruction_count+=1
+                else:
+                    editor_state.status_line=f"Halted after {instruction_count} instructions"
+        else:
+            editor_state.status_line="Typing..."
 
     #Stuff editor state variables back into class object
     editor_state.current_line=current_line
@@ -267,6 +272,7 @@ def AssemblerStep(editor_state,key):
 def DrawAll(screen,editor_state):
     ClearScreen(screen)
     DrawAssembler(program_lines,screen)
+    DrawStatusLine(screen,editor_state)
     ReturnCursor(INPUT_X+editor_state.input_ptr,LINES_START_Y+editor_state.current_line,screen)
     EndDrawing(screen)
 
@@ -277,6 +283,11 @@ def LinuxAssembler(screen,file_input):
     
     #Initialize colors pairs - must happen here after curses initiated
     InitColors()
+    
+    #Initialize editor size
+    rows,cols=screen.getmaxyx()
+    editor_state.col_count=cols
+    editor_state.row_count=rows
 
     #Draw assembler first time
     DrawAll(screen,editor_state)
@@ -295,6 +306,10 @@ def LinuxAssembler(screen,file_input):
             if key!="TIMEOUT":
                 editor_state.last_mode="key"
                 editor_state.redraw_text=True
+            if key=="KEY_RESIZE":
+                rows,cols=screen.getmaxyx()
+                editor_state.col_count=cols
+                editor_state.row_count=rows
 
         #Process key, resimulate, and update screen
         AssemblerStep(editor_state,key)
