@@ -41,25 +41,17 @@ def AssemblerStep(editor_state,key):
     global program_lines    #List of source lines containing parsed symbols and CPU state
     global COLOR_DICT       #Dictionary of colors by use (registers, numbers, etc)
 
-    #Make local copies of editor_state members. Restore below.
-    #Originally designed as part of InteractiveAssembler. Factored out to work with Brython.
-    current_line=editor_state.current_line
-    input_str=editor_state.input_str 
-    input_ptr=editor_state.input_ptr
-    redraw_text=editor_state.redraw_text
-    last_mode=editor_state.last_mode
-    
     resimulate=False
     
     if key=="TIMEOUT":
         #Timeout expired without keypress - reassemble and emulate
         resimulate=True
         key=""
-        if last_mode=="key":
-            redraw_text=True
+        if editor_state.last_mode=="key":
+            editor_state.redraw_text=True
         else:
-            redraw_text=False
-        last_mode="timeout"
+            editor_state.redraw_text=False
+        editor_state.last_mode="timeout"
     elif key=="KB_INTERRUPT":
         #Ctrl+C - exit program
         #Keyboard handler never returns this code in JavaScript version
@@ -68,109 +60,109 @@ def AssemblerStep(editor_state,key):
         #Signal that terminal was resized
         resimulate=True
     elif key=="KEY_BACKSPACE":
-        if input_ptr!=0:
+        if editor_state.input_ptr!=0:
             #Delete character in source line
-            input_str=input_str[:input_ptr-1]+input_str[input_ptr:]
-            input_ptr-=1
-        elif current_line>0:
+            editor_state.input_str=editor_state.input_str[:editor_state.input_ptr-1]+editor_state.input_str[editor_state.input_ptr:]
+            editor_state.input_ptr-=1
+        elif editor_state.current_line>0:
             #At position 0 - copy line to line above if room
-            if len(program_lines[current_line-1].raw_str)+len(input_str)<=MAX_INPUT_LEN:
-                del program_lines[current_line]
-                input_str=program_lines[current_line-1].raw_str+input_str
-                input_ptr=len(program_lines[current_line-1].raw_str)
-                current_line-=1
+            if len(program_lines[editor_state.current_line-1].raw_str)+len(editor_state.input_str)<=MAX_INPUT_LEN:
+                del program_lines[editor_state.current_line]
+                editor_state.input_str=program_lines[editor_state.current_line-1].raw_str+editor_state.input_str
+                editor_state.input_ptr=len(program_lines[editor_state.current_line-1].raw_str)
+                editor_state.current_line-=1
             else:
                 #Don't redraw if didn't copy line to line above
-                redraw_text=False
+                editor_state.redraw_text=False
         else:
             #Don't redraw if nothing deleted
-            redraw_text=False
+            editor_state.redraw_text=False
     elif key=="KEY_LEFT":
-        if input_ptr>0:
-            input_ptr-=1
-        elif current_line>0:
+        if editor_state.input_ptr>0:
+            editor_state.input_ptr-=1
+        elif editor_state.current_line>0:
             #At beginning of line - move to line above
-            program_lines[current_line].raw_str=input_str
-            input_str=program_lines[current_line-1].raw_str
-            input_ptr=len(input_str)
-            current_line-=1
+            program_lines[editor_state.current_line].raw_str=editor_state.input_str
+            editor_state.input_str=program_lines[editor_state.current_line-1].raw_str
+            editor_state.input_ptr=len(editor_state.input_str)
+            editor_state.current_line-=1
         else:
-            redraw_text=False
+            editor_state.redraw_text=False
     elif key=="KEY_RIGHT":
-        if input_ptr<len(input_str):
-            input_ptr+=1
-        elif current_line<len(program_lines)-1:
+        if editor_state.input_ptr<len(editor_state.input_str):
+            editor_state.input_ptr+=1
+        elif editor_state.current_line<len(program_lines)-1:
             #At end of line - move to line below
-            program_lines[current_line].raw_str=input_str
-            input_str=program_lines[current_line+1].raw_str
-            input_ptr=0
-            current_line+=1
+            program_lines[editor_state.current_line].raw_str=editor_state.input_str
+            editor_state.input_str=program_lines[editor_state.current_line+1].raw_str
+            editor_state.input_ptr=0
+            editor_state.current_line+=1
         else:
-            redraw_text=False
+            editor_state.redraw_text=False
     elif key=="KEY_UP":
-        if current_line>0:
-            program_lines[current_line].raw_str=input_str
-            input_str=program_lines[current_line-1].raw_str
-            if input_ptr>len(input_str):
-                input_ptr=len(input_str)
-            current_line-=1
-        elif input_ptr>0:
+        if editor_state.current_line>0:
+            program_lines[editor_state.current_line].raw_str=editor_state.input_str
+            editor_state.input_str=program_lines[editor_state.current_line-1].raw_str
+            if editor_state.input_ptr>len(editor_state.input_str):
+                editor_state.input_ptr=len(editor_state.input_str)
+            editor_state.current_line-=1
+        elif editor_state.input_ptr>0:
             #At first line - move cursor to beginning of line
-            input_ptr=0
+            editor_state.input_ptr=0
         else:
-            redraw_text=False
+            editor_state.redraw_text=False
     elif key=="KEY_DOWN":
-        if current_line<len(program_lines)-1:
-            program_lines[current_line].raw_str=input_str
-            input_str=program_lines[current_line+1].raw_str
-            if input_ptr>len(input_str):
-                input_ptr=len(input_str)
-            current_line+=1
-        elif input_ptr<len(input_str):
+        if editor_state.current_line<len(program_lines)-1:
+            program_lines[editor_state.current_line].raw_str=editor_state.input_str
+            editor_state.input_str=program_lines[editor_state.current_line+1].raw_str
+            if editor_state.input_ptr>len(editor_state.input_str):
+                editor_state.input_ptr=len(editor_state.input_str)
+            editor_state.current_line+=1
+        elif editor_state.input_ptr<len(editor_state.input_str):
             #At last line - move cursor to end of line
-            input_ptr=len(input_str)
+            editor_state.input_ptr=len(editor_state.input_str)
         else:
-            redraw_text=False
+            editor_state.redraw_text=False
     elif key=="KEY_HOME":
-        if input_ptr!=0:
-            input_ptr=0
+        if editor_state.input_ptr!=0:
+            editor_state.input_ptr=0
         else:
-            redraw_text=False
+            editor_state.redraw_text=False
     elif key=="KEY_END":
-        if input_ptr!=len(input_str):
-            input_ptr=len(input_str)
+        if editor_state.input_ptr!=len(editor_state.input_str):
+            editor_state.input_ptr=len(editor_state.input_str)
         else:
-            redraw_text=False
+            editor_state.redraw_text=False
     elif key=="KEY_DC": #Delete key
-        if input_ptr!=len(input_str):
-            input_str=input_str[:input_ptr]+input_str[input_ptr+1:]
-        elif current_line<len(program_lines)-1:
-            if len(program_lines[current_line+1].raw_str)+len(input_str)<=MAX_INPUT_LEN:
-                input_str+=program_lines[current_line+1].raw_str
-                del program_lines[current_line+1]
+        if editor_state.input_ptr!=len(editor_state.input_str):
+            editor_state.input_str=editor_state.input_str[:editor_state.input_ptr]+editor_state.input_str[editor_state.input_ptr+1:]
+        elif editor_state.current_line<len(program_lines)-1:
+            if len(program_lines[editor_state.current_line+1].raw_str)+len(editor_state.input_str)<=MAX_INPUT_LEN:
+                editor_state.input_str+=program_lines[editor_state.current_line+1].raw_str
+                del program_lines[editor_state.current_line+1]
             else:
-                redraw_text=False
+                editor_state.redraw_text=False
         else:
-            redraw_text=False
+            editor_state.redraw_text=False
     elif key=="KEY_ENTER":
-        program_lines[current_line].raw_str=input_str[:input_ptr]
-        program_lines.insert(current_line+1,LineClass())
-        current_line+=1
-        input_str=input_str[input_ptr:]
-        input_ptr=0
-    elif len(key)==1 and len(input_str)<MAX_INPUT_LEN:
+        program_lines[editor_state.current_line].raw_str=editor_state.input_str[:editor_state.input_ptr]
+        program_lines.insert(editor_state.current_line+1,LineClass())
+        editor_state.current_line+=1
+        editor_state.input_str=editor_state.input_str[editor_state.input_ptr:]
+        editor_state.input_ptr=0
+    elif len(key)==1 and len(editor_state.input_str)<MAX_INPUT_LEN:
         #Avoid escaped characters and other junk
         if key.isalnum() or key in " ~`!@#$%^&*()_+-={}[];':<>,.?/|\"\\":
-            input_str=input_str[:input_ptr]+key+input_str[input_ptr:]
-            input_ptr+=1
+            editor_state.input_str=editor_state.input_str[:editor_state.input_ptr]+key+editor_state.input_str[editor_state.input_ptr:]
+            editor_state.input_ptr+=1
     else:
-        redraw_text=False
+        editor_state.redraw_text=False
 
     #Update program line
-    if redraw_text:
+    if editor_state.redraw_text:
         #Save currently edited line
-        program_lines[current_line].raw_str=input_str
-        program_lines[current_line].raw_str_ptr=input_ptr
+        program_lines[editor_state.current_line].raw_str=editor_state.input_str
+        program_lines[editor_state.current_line].raw_str_ptr=editor_state.input_ptr
 
         #Clear all labels and symbols
         label_list.clear()
@@ -182,7 +174,7 @@ def AssemblerStep(editor_state,key):
         for i,line in enumerate(program_lines):
             #Resolve symbols and generate machine code where possible
             line.address=current_address
-            line.selected_line=(i==current_line)
+            line.selected_line=(i==editor_state.current_line)
             line.replaced_symbols={}
             line.pass_number=1
             current_address=line.update(current_address)
@@ -193,7 +185,7 @@ def AssemblerStep(editor_state,key):
 
         #Fill in forward referenced labels
         for i in symbol_unknown_indexes:
-            program_lines[i].selected_line=(i==current_line)
+            program_lines[i].selected_line=(i==editor_state.current_line)
             program_lines[i].pass_number=2
             program_lines[i].update(current_address)
             
@@ -264,13 +256,6 @@ def AssemblerStep(editor_state,key):
                     editor_state.status_line=f"Halted after {instruction_count} instruction{plural}"
         else:
             editor_state.status_line="Typing..."
-
-    #Stuff editor state variables back into class object
-    editor_state.current_line=current_line
-    editor_state.input_str=input_str 
-    editor_state.input_ptr=input_ptr
-    editor_state.redraw_text=redraw_text
-    editor_state.last_mode=last_mode
 
 #Draw assembler output
 def DrawAll(screen,editor_state):
