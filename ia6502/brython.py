@@ -180,10 +180,19 @@ def BeginAssembler(version,assembler_func=None):
 def key_handler(event):
     global timer_id
     global KB_TIMEOUT
+    
+    #Pass keys with ctrl pressed through to browser instead of handling here 
+    if event.ctrlKey:
+        return
+
+    #Process key since ctrl not pressed
     if timer_id!=None:
         timer.clear_timeout(timer_id)
         timer_id=None
     key=KeyInput(event.key)
+    if key!="(none)":
+        #If useful key came from KeyInput, don't perform it's browser behavior
+        event.preventDefault()
     editor_state.last_mode="key"
     editor_state.redraw_text=True
     AssemblerStep(editor_state,key)
