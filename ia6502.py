@@ -4,14 +4,8 @@
 #* Main 6502 Interactive Assembler file *
 #****************************************
 
-#TODO: one TODO in emulator.py
 
 #TODO at end:
-# - Kowalski cant do LDA 3+(4)
-# - check flags in Kowalski
-#   - what did I mean?
-# - check missing instructions in Kowalski
-#   - rmb?
 # - README.md
 
 #Linux console version with curses

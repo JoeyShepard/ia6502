@@ -18,20 +18,24 @@ jmp baz
 .set jar,baz+5
 lda jar
 
-;Unknown mem
+;Uninitialized mem
 uninit:
 lda 3
 tax
 adc 4
 
-;Parentheses hilite
+;Paren highlighting
 lda ((1+2)+(3+4))
 
 ;Errors
 .set ,5
 .set adc, 5
-clc 5
-lda (5,y)
-lda #256
 sta 5++2
+lda (5,y)
 ldz
+.org $D00E
+.db 42
+clc 5
+lda #256
+.org $FFFF
+.rs 1
