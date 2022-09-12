@@ -62,6 +62,14 @@ TEXT_COLORS=(
 #Filled in programmatically in InteractiveAssembler function below since needs initialized curses 
 COLOR_DICT={}
 
+#Copy of screen data for updating curses screen object. Keeping a copy prevents screen flashing.
+screen_copy_current=[[]]
+screen_copy_previous=[[]]
+
+#Cursor coordinates - need to save now since buffering screen output
+cursor_x=0
+cursor_y=0
+
 #Screen output functions
 #=======================
 
@@ -75,19 +83,63 @@ def InitColors():
 
 #Clear curses terminal
 def ClearScreen(screen):
-    screen.clear()
+    global screen_copy_current
+    rows,cols=screen.getmaxyx()
+    screen_copy_current=[]
+    for _ in range(rows):
+        screen_copy_current+=[[[" ","none"]]*cols]
 
 #Draw colored text in curses terminal
 def DrawText(draw_x,draw_y,text,screen,color="none"):
-    screen.addstr(draw_y,draw_x,text,COLOR_DICT[color])
+    global screen_copy_current, screen_copy_previous
+    if draw_y>=len(screen_copy_current):
+        return draw_x+len(text)
+    max_x=len(screen_copy_current[0])
+    for i,char in enumerate(text):
+        if draw_x+i>=max_x:
+            return draw_x+len(text)
+        screen_copy_current[draw_y][draw_x+i]=[char,color]  
     return draw_x+len(text)
 
 #Place green cursor on input line
 def ReturnCursor(x,y,screen):
-    screen.move(y,x)
+    global cursor_x, cursor_y
+    cursor_x=x
+    cursor_y=y
  
 #Render text to curses terminal after all changes have been made
 def EndDrawing(screen):
+    global screen_copy_current, screen_copy_previous
+    prev_rows=len(screen_copy_previous)
+    prev_cols=len(screen_copy_previous[0])
+    rows=len(screen_copy_current)
+    cols=len(screen_copy_current[0])
+    screen_rows,screen_cols=screen.getmaxyx()
+
+    if (prev_rows==rows==screen_rows) and (prev_cols==cols==screen_cols):
+        #Size of both buffers and current screen match - only update parts that changed
+        for y,row in enumerate(screen_copy_current):
+            for x,char in enumerate(row):
+                if not (y==rows-1 and x==len(row)-1):
+                    if screen_copy_current[y][x]!=screen_copy_previous[y][x]:
+                        screen.addstr(y,x,char[0],COLOR_DICT[char[1]])
+        screen_copy_previous=screen_copy_current
+    else:
+        #Size of screen or buffers changed - redraw everything
+        screen_copy_previous=[]
+        for y in range(screen_rows):
+            screen_copy_previous+=[[]]
+            for x in range(screen_cols):
+                if y==rows-1 and x==cols-1:
+                    pass
+                elif y<rows and x<cols:
+                    char=screen_copy_current[y][x]
+                    screen.addstr(y,x,char[0],COLOR_DICT[char[1]])
+                    screen_copy_previous[-1]+=[char]
+                else:
+                    screen.addstr(y,x," ",COLOR_DICT["none"])
+                    screen_copy_previous[-1]+=[[" ","none"]]
+    screen.move(cursor_y,cursor_x)
     screen.refresh()
 
 #Key input
