@@ -7,10 +7,6 @@
 
 from ia6502.classes import *
 
-#Constants
-#=========
-MAX_INSTRUCTIONS=1000    #Max instructions to execute to prevent endless loop
-
 #Globals
 #=======
 emu_addresses={}
