@@ -7,6 +7,10 @@
 
 from ia6502.classes import *
 
+#Constants
+#=========
+MAX_INSTRUCTIONS=1000
+
 #Globals
 #=======
 emu_addresses={}
@@ -409,7 +413,7 @@ def BBR5_ZPR(emu_line): #0x5F
 def RTS_IMP(emu_line): #0x60
 	address,data=mode_IMP(emu_line)
 	address=op_RTS(emu_line,address,data,"IMP")
-	return address+1
+	return address
 
 def ADC_IZX(emu_line): #0x61
 	address,data=mode_IZX(emu_line)

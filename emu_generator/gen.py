@@ -249,7 +249,7 @@ with open("emu_ops.py","wt") as f:
             f.write(f"def {name}_{mode}(emu_line): #0x{Hex2(i)}\n")
             f.write(f"\taddress,data=mode_{mode}(emu_line)\n")
             f.write(f'\taddress=op_{name}(emu_line,address,data,"{mode}")\n')
-            if mode in ["ZPR","REL"] or name in ["JMP","JSR"]:
+            if mode in ["ZPR","REL"] or name in ["JMP","JSR","RTS"]:
                 #Don't add size of instruction to PC
                 f.write("\treturn address\n")
             else:
