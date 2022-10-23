@@ -1565,7 +1565,7 @@ def FilterZP(address,addition):
     address_hi=(address+addition+1)%0x100
     if emu_mem[address_lo]==-1 or emu_mem[address_hi]==-1:
         return -1
-    return emu_mem[address_lo]+emu_mem[address_hi]<<8
+    return emu_mem[address_lo]+(emu_mem[address_hi]<<8)
 
 #Calculate relative branch and halt if undefined byte in instruction
 def RelAddress(emu_line,address,condition,size=2,invert=False):
