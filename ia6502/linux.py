@@ -11,7 +11,7 @@ from ia6502.classes import EditorStateClass
 
 #Text colors for curses
 COLOR_NAMES={
-    "blue":     curses.COLOR_BLUE,
+    "blue":     curses.COLOR_BLUE, 
     "green":    curses.COLOR_GREEN,
     "cyan":     curses.COLOR_CYAN,
     "yellow":   curses.COLOR_YELLOW,
@@ -19,6 +19,17 @@ COLOR_NAMES={
     "magenta":  curses.COLOR_MAGENTA,
     "white":    curses.COLOR_WHITE,
     "black":    curses.COLOR_BLACK
+    }
+
+COLOR_ATTRIBUTES={
+    "blue":     curses.A_BOLD, 
+    "green":    0,
+    "cyan":     0,
+    "yellow":   0,
+    "red":      0,
+    "magenta":  curses.A_BOLD,
+    "white":    0,
+    "black":    0
     }
 
 #Colors for different types of text
@@ -77,8 +88,9 @@ cursor_y=0
 #Needs own function like this since must happen after curses initialization
 def InitColors():
     for i,color in enumerate(TEXT_COLORS):
-        curses.init_pair(i+1,COLOR_NAMES[color[1][0]],COLOR_NAMES[color[1][1]])
-        COLOR_DICT[color[0]]=curses.color_pair(i+1)
+        fore_color=color[1][0]
+        curses.init_pair(i+1,COLOR_NAMES[fore_color],COLOR_NAMES[color[1][1]])
+        COLOR_DICT[color[0]]=curses.color_pair(i+1)|COLOR_ATTRIBUTES[fore_color]
     COLOR_DICT["none"]=curses.color_pair(0)
 
 #Clear curses terminal
