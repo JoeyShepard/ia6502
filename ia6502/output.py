@@ -21,7 +21,7 @@ REG_Y_WIDTH=4                   #Width of column showing value of Y register
 REG_SP_WIDTH=4+1                #Width of column showing value of SP register. +1 spacing between sections
 FLAGS_WIDTH=9+1                 #Width of column showing value of flags. +1 spacing between sections
 SOURCE_WIDTH=len("$C000: $AB ") #Width of column showing source address and value
-DEST_WIDTH=len("$C000: $AB ")   #Width of column showing destinarion address and value
+DEST_WIDTH=len("$C000: $AB ")   #Width of column showing destination address and value
 
 START_X=0                               #Starting X value for printing columns
 STATUS_X=START_X                        #X value for column showing > for emulated line

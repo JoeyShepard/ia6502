@@ -1623,7 +1623,7 @@ def PullByte(emu_line):
 
 #Compare two values and mark if comparison has undefined values
 #Also, set flags to reflect comparison
-def Compare(emu_line,data,cmp_val):
+def Compare(emu_line,data,cmp_val,address,mode):
     if cmp_val==-1 or data==-1:
         emu_line.CPU.C="?"
         emu_line.CPU.N="?"
@@ -1636,6 +1636,10 @@ def Compare(emu_line,data,cmp_val):
     emu_line.CPU.C_changed=True
     emu_line.CPU.N_changed=True
     emu_line.CPU.Z_changed=True
+    if mode!="IMMED":
+        emu_line.source_address=address
+        emu_line.source_byte=data
+    return emu_line.address
 
 #RMB operation for RMB0-RMB7 instructions
 def RMB(emu_line,address,data,bit):
@@ -1887,15 +1891,15 @@ def op_CLV(emu_line,address,data,mode):
     return emu_line.address
 
 def op_CMP(emu_line,address,data,mode):
-    Compare(emu_line,data,emu_line.CPU.A)
+    Compare(emu_line,data,emu_line.CPU.A,address,mode)
     return emu_line.address
 
 def op_CPX(emu_line,address,data,mode):
-    Compare(emu_line,data,emu_line.CPU.X)
+    Compare(emu_line,data,emu_line.CPU.X,address,mode)
     return emu_line.address
 
 def op_CPY(emu_line,address,data,mode):
-    Compare(emu_line,data,emu_line.CPU.Y)
+    Compare(emu_line,data,emu_line.CPU.Y,address,mode)
     return emu_line.address
 
 def op_DEC(emu_line,address,data,mode):
